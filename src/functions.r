@@ -152,3 +152,95 @@ gen_unique_diagnoses_pr_patient <- function(df, confidence_intervals=TRUE) {
 log_time <- function() {
   print(format(Sys.time(), '%d/%m/%y %H:%M:%S'))
 }
+
+#' Takes a dataframe with visits as rows. Constructs unique keys for each sequence based on 
+#' clinic ID and patient ID. If distance between visits is higher than threshold, create a new
+#' unique clinic ID + patient ID key.
+#' 
+#' Terminology:
+#'  no_threshold_sequence: A connected series of outpatient visits, where their IDs are location + patient ID
+#'  
+#' @param df 
+#' @param clinic_id_col
+#' @param patient_id_col
+#' @param time_threshold
+#' 
+#' @return df_with_constructed_sequences
+
+construct_sequences <- function(df, clinic_id_col, patient_id_col, date_col, threshold_months=0, verbose = TRUE) {
+
+  df <- df %>% mutate(no_threshold_constructed_id = paste0({{patient_id_col}}, {{clinic_id_col}}))
+
+  if (threshold_months == 0) {
+    df <- df %>% 
+      rename(constructed_id = no_threshold_constructed_id)
+  } else {
+    df <- df %>% 
+      mutate(constructed_id = 0) %>% 
+      mutate(split_sequence = 0) %>% 
+      mutate(prev_id = 0) %>% 
+      arrange(no_threshold_constructed_id, {{date_col}})
+
+    MONTH_IN_SECONDS <- 30 * 24 * 60 * 60 # Calculate seconds in a month to add to POSIXct.
+
+    current_no_threshold_id <- 0 # The ID constructed without taking thresholds into account
+    current_threshold_sequence_id <- 0
+    
+    patient_n <- 0
+    last_date <- 0
+
+    total_patients <- df %>% 
+      select(dw_ek_borger) %>% 
+      n_distinct()
+
+    constructed_ids <- c()
+
+    current_threshold_id_sequence_nr <- 1
+
+    for (i in 1:nrow(df)) {
+      i_date <- df$datotid_start[i]
+      i_no_threshold_id <- df$no_threshold_constructed_id[i]
+
+      # If no_threshold ID has changed, consider to be a new sequence
+      if (i_no_threshold_id != current_no_threshold_id) {
+        df$prev_id[i] <- current_no_threshold_id
+
+        current_threshold_id_sequence_nr <- 1
+
+        current_no_threshold_id <- i_no_threshold_id
+        current_threshold_sequence_id <- paste0(i_no_threshold_id, current_threshold_id_sequence_nr)
+        
+        if (patient_n %% 100 == 0 ) {
+          percent_complete_rounded <- round(patient_n/total_patients*100, digits = 1)
+          print(str_c(percent_complete_rounded, "%: Processing patient nr. ", patient_n))
+        }
+
+        patient_n <- patient_n + 1
+
+        df$constructed_id[i] <- current_threshold_sequence_id
+        
+        last_date <- i_date
+        
+        next()
+      }
+
+      # Continue processing the same no_threshold sequence
+      if (i_no_threshold_id == current_no_threshold_id) { 
+        df$prev_id[i] <- current_no_threshold_id
+
+        # Handle recoding if distance is larger than threshold
+        if (i_date > last_date + MONTH_IN_SECONDS * threshold_months) {
+          df$split_sequence[i] <- 1
+
+          current_threshold_id_sequence_nr <- current_threshold_id_sequence_nr + 1
+          current_threshold_sequence_id <- paste0(i_no_threshold_id, current_threshold_id_sequence_nr)
+        }
+      }
+
+      last_date <- i_date
+      df$constructed_id[i] <- current_threshold_sequence_id
+    }
+  }
+
+  return(df)
+}

@@ -26,18 +26,39 @@ df_outpatient_preprocessed <- df_raw_outpatient %>%
   mutate(constructed_id = paste0(dw_ek_borger, clinic)) # Remove weird periods
 ```
 
+```{r}
+source("../src/functions.r")
+
+df_outpatient_preprocessed <- df_raw_outpatient %>%
+  mutate(no_threshold_constructed_id = paste0(dw_ek_borger, shakgeografiafskode_besoeg)) %>% 
+  select(dw_ek_borger,
+         datotid_start, 
+         adiagnosekode, 
+         ambbesoeg, 
+         dw_sk_lpr3forloebsansvar,
+         dw_sk_kontakt,
+         shakgeografiafskode_besoeg,
+         no_threshold_constructed_id) %>% 
+  slice_sample(prop = 1) %>% 
+  construct_sequences(clinic_id_col=shakgeografiafskode_besoeg, 
+                      patient_id_col=dw_ek_borger, 
+                      date_col=datotid_start, 
+                      threshold_months=3, 
+                      verbose = TRUE)
+  
+```
 
 ```{r}
-df_outpatient_constructed_default <- df_outpatient_preprocessed %>%
+df_outpatient_constructed_default <- df_outpatient_with_constructed_sequences %>%
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE)
 
-df_outpatient_constructed_most_severe <- df_outpatient_preprocessed %>%
+df_outpatient_constructed_most_severe <- df_outpatient_with_constructed_sequences %>%
   recode_with_most_severe_diagnosis_for_sequence(constructed_id) %>% 
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE)
 ```
 
 ```{r}
-df_outpatient_constructed_last_visit_only <- df_outpatient_preprocessed %>%
+df_outpatient_constructed_last_visit_only <- df_outpatient_with_constructed_sequences %>%
   recode_diagnoses_with_last_in_sequence(constructed_id) %>% 
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE)
 

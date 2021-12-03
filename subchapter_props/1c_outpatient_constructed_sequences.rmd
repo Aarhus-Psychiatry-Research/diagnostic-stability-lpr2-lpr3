@@ -13,7 +13,11 @@ source("0_setup_env_subchapter.r")
 ```{r}
 source("../src/functions.r")
 df_constructed_outpatient_series <- df_outpatient_for_subchapter %>% 
-  mutate(constructed_id = paste0(dw_ek_borger, clinic))
+  construct_sequences(clinic_id_col=clinic, 
+                      patient_id_col=dw_ek_borger, 
+                      date_col=datotid_start, 
+                      threshold_months=3, 
+                      verbose = TRUE)
 
 # TODO: 
 # 0. Generate a unique ID for each "sequence" (patient + clinic)
