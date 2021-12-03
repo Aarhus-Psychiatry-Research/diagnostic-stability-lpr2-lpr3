@@ -4,14 +4,14 @@ editor_options:
   chunk_output_type: inline
 ---
 ```{r}
-source("0_setup_env_subchapter.r")
+source(here::here("subchapter_props", "0_setup_env.r"))
 ```
 
 # Run 1a_outpatient_naive.rmd first!
 
 ## Outpatient, construct ambulatory sequences
 ```{r}
-source("../src/functions.r")
+source(here::here("src", "functions.r"))
 df_constructed_outpatient_series <- df_outpatient_for_subchapter %>% 
   mutate(constructed_id = paste0(dw_ek_borger, clinic))
 
@@ -59,7 +59,7 @@ log_time()
 
 ```{r}
 ## Plot
-source("../src/subchapter_props_functions.r")
+source(here::here("src", "subchapter_props_functions.r"))
 
 graph_subchapter_props(df_examine_mitigation_constructed_sequences, 
                        filename = "examine_mitigation_constructed_full_same_y_axes",
@@ -74,4 +74,56 @@ graph_subchapter_props(df_examine_mitigation_constructed_sequences,
                        )
 
 log_time()
+```
+
+## Plot with p-values
+```{r}
+df_examine_mitigation_constructed_sequences_without_first_quarters <- df_examine_mitigation_constructed_sequences %>%
+  filter(period > "2013-01-01")
+
+
+```
+
+```{r}
+pacman::p_load(fable, tsibble, feasts, urca)
+
+
+df_examine_mitigation_constructed_sequences_without_first_quarters_p_values <- df_examine_mitigation_constructed_sequences_without_first_quarters %>% 
+  mutate(lpr3 = if_else(period < "2019-02-03", 0, 1),
+         period = yearquarter(period)) %>% 
+  select(prop, adiagnosekode, period, origin, lpr3) %>% 
+  as_tsibble(key = c(origin, adiagnosekode), index = period) %>% 
+  model(arima = ARIMA(prop ~ 1 + lpr3 + pdq(0,0,0) + PDQ(0,0,0))) %>% 
+  coef() %>% 
+  select(!.model) %>% 
+  filter(term == "lpr3")
+
+# add the needed x (period) and y (prop) values for plotting 
+df_examine_mitigation_constructed_sequences_without_first_quarters_p_values <- df_examine_mitigation_constructed_sequences_without_first_quarters %>% 
+  filter(period == max(period)) %>% 
+  select(period, prop, origin, adiagnosekode) %>% 
+  left_join(df_examine_mitigation_constructed_sequences_without_first_quarters_p_values, by=c("origin", "adiagnosekode")) %>% 
+  mutate(significant = if_else(p.value < 0.05, "*", "")) 
+```
+
+
+
+```{r}
+source("../src/subchapter_props_functions.r")
+
+
+graph_subchapter_props(df_examine_mitigation_constructed_sequences_without_first_quarters, 
+                       filename = "examine_mitigation_constructed_without_first_quarters_full_same_y_axes_with_p_values",
+                       date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
+                       ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
+                       p_values = df_examine_mitigation_constructed_sequences_without_first_quarters_p_values,
+                       nudge_constant = 0.02)
+
+
+graph_subchapter_props(df_examine_mitigation_constructed_sequences_without_first_quarters, 
+                       filename = "examine_mitigation_constructed_without_first_quarters_full_same_y_axes_with_p_values",
+                       date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
+                       ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
+                       p_values = df_examine_mitigation_constructed_sequences_without_first_quarters_p_values,
+                       nudge_frac = 0.02)
 ```
