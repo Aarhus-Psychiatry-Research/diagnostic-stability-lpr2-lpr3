@@ -1,0 +1,77 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+```{r}
+source("0_setup_env_subchapter.r")
+```
+
+# Run 1a_outpatient_naive.rmd first!
+
+## Outpatient, construct ambulatory sequences
+```{r}
+source("../src/functions.r")
+df_constructed_outpatient_series <- df_outpatient_for_subchapter %>% 
+  mutate(constructed_id = paste0(dw_ek_borger, clinic))
+
+# TODO: 
+# 0. Generate a unique ID for each "sequence" (patient + clinic)
+# 1. Process each unique entity of outpatient-clinic + patient-identifier uniquely
+# 2. Split sequences if there are gaps > n months
+
+```
+
+### Constructed series, final visit
+```{r}
+df_constructed_sequence_final_visit_only <- df_constructed_outpatient_series %>% 
+  recode_diagnoses_with_last_in_sequence(constructed_id)
+
+df_n_with_diag_in_period_constructed_final_diag <- df_constructed_sequence_final_visit_only %>% 
+  add_column_n_with_diagnosis_in_period()
+
+df_prop_diag_constructed_sequence_final_visit_only <- calc_prop_of_unique_patients_with_diagnosis(df_unique_in_period_outpatient,
+                                                     df_n_with_diag_in_period_constructed_final_diag)
+
+```
+### Constructed series, most severe visit
+```{r}
+df_constructed_sequence_most_severe_diag <- df_constructed_outpatient_series %>% 
+  recode_with_most_severe_diagnosis_for_sequence(constructed_id)
+
+df_n_with_diag_in_period_constructed_most_severe_diag <- df_constructed_sequence_most_severe_diag %>% 
+  add_column_n_with_diagnosis_in_period()
+
+df_prop_diag_constructed_sequence_most_severe_diag <- calc_prop_of_unique_patients_with_diagnosis(df_unique_in_period_outpatient,
+                                                     df_n_with_diag_in_period_constructed_most_severe_diag)
+```
+
+## Plot
+```{r}
+
+## Join with the receiver dataframe
+df_examine_mitigation_constructed_sequences <- mutate(df_prop_diag_constructed_sequence_most_severe_diag, origin = "Unchanged") %>% 
+  bind_rows(mutate(df_prop_diag_constructed_sequence_most_severe_diag, origin = "Most severe")) %>% 
+  bind_rows(mutate(df_prop_diag_constructed_sequence_final_visit_only, origin = "Final visit"))
+
+log_time()
+```
+
+```{r}
+## Plot
+source("../src/subchapter_props_functions.r")
+
+graph_subchapter_props(df_examine_mitigation_constructed_sequences, 
+                       filename = "examine_mitigation_constructed_full_same_y_axes",
+                       date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
+                       ylabel = "Proportion of outpatients with incident main diagnosis from chapter"
+                       )
+
+graph_subchapter_props(df_examine_mitigation_constructed_sequences, 
+                       filename = "examine_mitigation_constructed_full_free_y_axes",
+                       date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
+                       ylabel = "Proportion of outpatients with incident main diagnosis from chapter"
+                       )
+
+log_time()
+```

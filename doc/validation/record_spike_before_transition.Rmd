@@ -1,0 +1,31 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r}
+conn <- DBI::dbConnect(
+  odbc::odbc(),
+  Driver = "SQL Server",
+  Server = "BI-DPA-PROD",
+  database = "USR_PS_Forsk",
+  Trusted_Connection = "TRUE"
+)
+
+df_raw_outpatient <- dbGetQuery(conn, "SELECT * FROM [fct].FOR_besoeg_fysiske_fremmoeder") %>% 
+  rename_with(tolower)
+```
+
+
+Examine whether there is a spike in new records right before the LPR2->LPR3 transition. Could explain the increase pre-transition we see in the figures.
+
+```{r}
+df_examine_record_spike <- df_raw_outpatient %>% 
+  filter(datotid_start > ymd("2019-01-01"))
+
+hist(as.Date(df_examine_record_spike$datotid_start), "days", freq = TRUE)
+```
+
+No obvious spikes, so that's not the explanation

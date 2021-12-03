@@ -1,0 +1,173 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+```{r}
+source("0_setup_env.r")
+```
+
+```{r}
+df_outpatient_with_periods <- df_raw_outpatient %>% 
+  filter(ambbesoeg == 1) %>% 
+  add_LPR23_quarter_column()
+
+log_time()
+```
+## Outpatient, naive useage of kontakt and forløbsansvar
+
+Reduce complexity
+```{r}
+df_outpatient_for_subchapter <- df_outpatient_with_periods %>% 
+  select(dw_ek_borger,
+         datotid_start,
+         dw_sk_lpr3forloebsansvar,
+         dw_sk_kontakt,
+         adiagnosekode,
+         ambbesoeg,
+         period,
+         shakgeografiafskode_besoeg) %>%
+  rename(clinic = shakgeografiafskode_besoeg) %>% 
+  keep_only_psych_visits() %>% 
+  truncate_diagnosis_to_letter_and_digit()
+```
+
+Calculate which proportion of patients have gotten a diagnosis within a subchapter for the period.
+```{r}
+df_unique_in_period_outpatient <- df_outpatient_for_subchapter %>%  
+  add_column_unique_pt_in_period() 
+
+df_unique_with_diagnosis_outpatient <- df_outpatient_for_subchapter %>% 
+  add_column_n_with_diagnosis_in_period()
+
+df_prop_diag_outpatient <- calc_prop_of_unique_patients_with_diagnosis(df_unique_in_period_outpatient, df_unique_with_diagnosis_outpatient)
+
+log_time()
+```
+
+Recode with most severe from sequence
+```{r}
+source("../src/functions.r")
+df_unique_with_diagnosis_as_most_severe_outpatient <- df_outpatient_for_subchapter %>% 
+  recode_with_most_severe_diagnosis_for_sequence(dw_sk_kontakt, dw_sk_lpr3forloebsansvar, two_columns = TRUE) %>% 
+  add_column_n_with_diagnosis_in_period() 
+```
+
+```{r}
+source("../src/functions.r")
+df_prop_diag_most_severe_outpatient <- calc_prop_of_unique_patients_with_diagnosis(df_unique_in_period_outpatient, 
+                                                      df_unique_with_diagnosis_as_most_severe_outpatient)
+
+log_time()
+
+```
+
+
+Recode with final visit's diagnosis in sequence
+```{r}
+source("../src/functions.r")
+df_outpatient_for_subchapter_final_visit_only <- df_outpatient_for_subchapter %>% 
+  recode_diagnoses_with_last_in_sequence(dw_sk_kontakt, dw_sk_lpr3forloebsansvar, two_columns = TRUE)
+
+df_unique_with_diagnosis_outpatient_final_visit_only <- df_outpatient_for_subchapter_final_visit_only %>% 
+  add_column_n_with_diagnosis_in_period()
+
+df_prop_diag_outpatient_final_visit_only <- calc_prop_of_unique_patients_with_diagnosis(df_unique_in_period_outpatient,
+                                                     df_unique_with_diagnosis_outpatient_final_visit_only)
+
+log_time()
+
+```
+
+## Plotting
+
+# Examine mitigation strategies
+## Forloebsansvar and LPR2 kontakt
+```{r}
+
+## Join with the receiver dataframe
+df_mitigation_naive <- mutate(df_prop_diag_outpatient, origin = "Unchanged") %>% 
+  bind_rows(mutate(df_prop_diag_most_severe_outpatient, origin = "Most severe")) %>% 
+  bind_rows(mutate(df_prop_diag_outpatient_final_visit_only, origin = "Final visit"))
+
+df_mitigation_naive_without_first_quarters <- df_mitigation_naive %>%
+  filter(period > "2013-01-01")
+
+log_time()
+```
+
+```{r}
+## Plot
+print(getwd())
+
+source("../src/functions.r")
+source("../src/subchapter_props_functions.r")
+
+graph_subchapter_props(df_mitigation_naive, 
+                       filename = "examine_mitigation_full_same_y_axes",
+                       date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
+                       ylabel = "Proportion of outpatients with incident main diagnosis from chapter"
+                       )
+
+graph_subchapter_props(df_mitigation_naive, 
+                       filename = "examine_mitigation_full_free_y_axes",
+                       date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
+                       ylabel = "Proportion of outpatients with incident main diagnosis from chapter"
+                       )
+
+log_time()
+
+```
+
+```{r}
+## Plot
+source("../src/subchapter_props_functions.r")
+
+graph_subchapter_props(df_mitigation_naive_without_first_quarters, 
+                       filename = "examine_mitigation_without_first_quarters_same_y_axes",
+                       date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
+                       ylabel = "Proportion of outpatients with incident main diagnosis from chapter"
+                       )
+
+graph_subchapter_props(df_mitigation_naive_without_first_quarters, 
+                       filename = "examine_mitigation_without_first_quarters_free_y_axes",
+                       date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
+                       ylabel = "Proportion of outpatients with incident main diagnosis from chapter"
+                       )
+
+log_time()
+
+```
+
+```{r}
+pacman::p_load(fable, tsibble, feasts, urca)
+
+# binary indicator for date in LPR2/LPR3
+df_mitigation_naive_without_first_quarters <- df_mitigation_naive_without_first_quarters %>% 
+  mutate(lpr3 = if_else(period < "2019-02-03", 0, 1)) 
+  
+
+# What to report? 
+# pdq(0,0,0) = linear model / t.test (no detrending)
+# pdq(0,1,0) = liear model with differencing
+# pdq(1,1,0) = autoregressive model with differencing
+df_mitigation_naive_without_first_quarters %>% 
+  mutate(period = yearquarter(period)) %>%
+  select(prop, adiagnosekode, period, origin, lpr3) %>% 
+  as_tsibble(key = c(origin, adiagnosekode), index = period) %>% 
+  model(arima = ARIMA(prop ~ 1 + lpr3 + pdq(0,0,0) + PDQ(0,0,0))) %>% 
+  coef() %>% 
+  select(!.model) %>% 
+  filter(term == "lpr3")
+```
+
+```{r}
+df_mitigation_naive_without_first_quarters %>% 
+  mutate(lpr3 = if_else(period < "2019-02-03", 0, 1),
+         period = yearquarter(period)) %>% 
+  select(prop, adiagnosekode, period, origin, lpr3) %>% 
+  as_tsibble(key = c(origin, adiagnosekode), index = period) %>% 
+  model(arima = ARIMA(prop ~ 1 + lpr3 + pdq(0,0,0) + PDQ(0,0,0))) %>% 
+  coef() %>% 
+  select(!.model)
+```

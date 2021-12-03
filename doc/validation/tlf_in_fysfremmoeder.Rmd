@@ -1,0 +1,70 @@
+---
+title: "Validity of ambbesoeg"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(DBI)
+library(data.table)
+library(dtplyr)
+library(dplyr, warn.conflicts = FALSE)
+library(lubridate)
+library(ggplot2)
+library(stringr)
+library(tidyr)
+library(tidyverse)
+library(qwraps2)
+library(xlsx)
+
+```
+
+
+
+```{r}
+conn <- DBI::dbConnect(
+  odbc::odbc(),
+  Driver = "SQL Server",
+  Server = "BI-DPA-PROD",
+  database = "USR_PS_Forsk",
+  Trusted_Connection = "TRUE"
+)
+
+df_fys_raw <- dbGetQuery(conn, "SELECT * FROM [fct].FOR_besoeg_fysiske_fremmoeder") %>% 
+  rename_with(tolower)
+
+df_fys <- df_fys_raw %>% 
+  select(dw_ek_borger, datotid_start, dw_sk_besoeg) %>% 
+  mutate(fys = 1)
+
+df_tlf_raw <- dbGetQuery(conn, "SELECT * FROM [fct].FOR_telefon_video_konsultationer_psyk_somatik_LPR2") %>% 
+  rename_with(tolower)
+
+df_tlf <- df_tlf_raw %>%
+  select(dw_ek_borger, datotid_udfoert, dw_sk_besoeg) %>%
+  rename(datotid_start = datotid_udfoert) %>% 
+  mutate(tlf = 1)
+
+```
+
+
+Check if any "fysiske fremmoeder" are also in tlf df by dw_sk_besoeg
+
+```{r}
+df_overlap <- bind_rows(df_fys, df_tlf) %>% 
+  mutate(dato_start = as.Date(ymd_hms(datotid_start))) %>% 
+  replace_na(list(fys = 0,
+                  tlf = 0)) %>% 
+  group_by(dw_ek_borger, datotid_start) %>% 
+  mutate(total_in_date_borger_group = n(),
+         row_in_date_borger_group = row_number(),
+         fys_in_date_borger_group = sum(fys),
+         tlf_in_date_borger_group = sum(tlf))
+
+df_overlap_filterd <- df_overlap %>% 
+  filter(total_in_date_borger_group > 1) %>% 
+  filter(fys_in_date_borger_group > 0 & tlf_in_date_borger_group > 0)
+  
+```
+

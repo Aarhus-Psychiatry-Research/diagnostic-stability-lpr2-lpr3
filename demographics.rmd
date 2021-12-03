@@ -1,0 +1,55 @@
+---
+title: "demographics"
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r}
+library(DBI)
+library(dplyr)
+library(lubridate)
+
+options(lubridate.fasttime = TRUE)
+
+library(ggplot2)
+library(stringr)
+library(tidyr)
+library(zoo)
+
+source("E:/Users/adminmanber/Desktop/FeasibilityMapper/utils.r")
+source("../src/functions.r")
+```
+
+```{r}
+df_psyk_raw <- get_fct("FOR_besoeg_fysiske_fremmoeder")
+```
+
+```{r}
+df_demo_raw <- get_fct("FOR_kohorte_demografi")
+```
+
+```{r}
+df_first_p <- df_psyk_raw %>% 
+  select(dw_ek_borger, datotid_start) %>% 
+  group_by(dw_ek_borger) %>% 
+  arrange(datotid_start, .by_group=TRUE) %>% 
+  filter(row_number() == 1) %>% 
+  rename(datotid_f_psych = datotid_start) %>% 
+  ungroup()
+```
+
+
+```{r}
+df_age_at_first_p <- df_first_p %>% 
+  left_join(df_demo_raw %>% select(foedselsdato, dw_ek_borger, koennavn)) %>% 
+  mutate(age_in_years = (as.numeric(as.Date(ymd_hms(datotid_f_psych)) - ymd(foedselsdato)))/365.25) %>% 
+  mutate(koennavn = as.factor(koennavn))
+```
+
+```{r}
+source("src/demographics.r")
+
+plot_hist_and_boxplot <- plot_hist_and_boxplot(df_age_at_first_p)
+```
+

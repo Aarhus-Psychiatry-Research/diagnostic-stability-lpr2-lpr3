@@ -1,0 +1,25 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+Are dw_sk_kontakt and dw_lpr3_forloebsansvar unique?
+
+```{r}
+df_uncombined <- df_raw_outpatient %>% 
+  select(dw_sk_lpr3forloebsansvar, dw_sk_kontakt)
+
+n_unique(df_uncombined)
+```
+
+```{r}
+df_combined <- df_uncombined %>% 
+  mutate(identifier = pmax(dw_sk_lpr3forloebsansvar, dw_sk_kontakt)) %>% 
+  select(identifier)
+
+n_unique(df_combined)
+```
+
+Luckily, they're unique across. 

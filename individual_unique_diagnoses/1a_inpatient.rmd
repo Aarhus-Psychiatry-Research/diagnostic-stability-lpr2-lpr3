@@ -1,0 +1,34 @@
+---
+title: "individual_unique_diagnoses_by_date"
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r}
+source("0_setup_env_unique_diagnoses.rmd")
+```
+
+## Select variables and join LPR2/LPR3 for inpatient
+```{r}
+df_inpatient_lpr3 <- df_raw_lpr3 %>%
+  filter(pt_type == "Indlagt") %>% 
+  select(dw_ek_borger, adiagnosekode, datotid_lpr3kontaktstart) %>% 
+  rename(datotid_start = datotid_lpr3kontaktstart)
+
+df_inpatient_lpr2 <- df_raw_lpr2_inpatient %>% 
+  select(dw_ek_borger, adiagnosekode, datotid_indlaeggelse) %>%
+  mutate(dw_sk_forloebsansvar = -1) %>% 
+  rename(datotid_start = datotid_indlaeggelse)
+
+df_inpatient_joined <- bind_rows(df_inpatient_lpr2, df_inpatient_lpr3)
+
+log_time()
+  
+```
+
+```{r}
+df_inpatient_for_individual <- df_inpatient_joined %>% 
+  add_LPR23_quarter_column() %>% 
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE)
+```
