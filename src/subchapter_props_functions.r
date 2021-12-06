@@ -126,11 +126,11 @@ graph_subchapter_props <- function(
             base_plot <- base_plot + 
                 geom_text(data = p_values,
                         aes(label = significant,
-                            ymin = NULL,
-                            ymax = NULL),
-                            size = 5,
-                            hjust = -1.3,
-                            show.legend=FALSE) 
+                                ymin = NULL,
+                                ymax = NULL),
+                        size = 5,
+                        hjust = -1.3,
+                        show.legend=FALSE) 
         }
 
 

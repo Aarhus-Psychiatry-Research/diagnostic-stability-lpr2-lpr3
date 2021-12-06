@@ -160,7 +160,8 @@ df_mitigation_naive_without_first_quarters_p_values <- df_mitigation_naive_witho
   filter(period == max(period)) %>% 
   select(period, prop, origin, adiagnosekode) %>% 
   left_join(df_mitigation_naive_without_first_quarters_p_values, by=c("origin", "adiagnosekode")) %>% 
-  mutate(significant = if_else(p.value < 0.05, "*", "")) 
+  mutate(corrected_p <- p.adjust(p.value, "fdr"),
+         significant = if_else(corrected_p < 0.05, "*", "")) 
 ```
 
 

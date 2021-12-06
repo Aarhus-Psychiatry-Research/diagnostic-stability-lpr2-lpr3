@@ -70,11 +70,14 @@ mitigation_constructed_plot
 Mitigation
 ```{r}
 df_mitigation <- df_outpatient_constructed_default %>% 
-                            filter(period > ymd("2012-12-31")) %>% 
-                            mutate(origin = "outpatient_all") %>% 
-                            bind_rows(mutate(df_outpatient_constructed_most_severe, origin = "most_severe")) %>% 
-                            bind_rows(mutate(df_outpatient_constructed_last_visit_only, origin = "final_visit")) %>% 
-                            mutate(period = as.Date(period))
+  filter(period > ymd("2012-12-31")) %>% 
+  mutate(origin = "outpatient_all") %>% 
+  bind_rows(mutate(df_outpatient_constructed_most_severe, origin = "most_severe")) %>% 
+  bind_rows(mutate(df_outpatient_constructed_last_visit_only, origin = "final_visit")) %>% 
+  mutate(period = as.Date(period)) %>% 
+  mutate(origin = case_when(origin == "outpatient_all" ~ "Unmitigated",
+                                origin == "final_visit" ~ "Final visit",
+                                origin == "most_severe" ~ "Most severe")) 
 
 
 pacman::p_load(fable, tsibble, feasts, urca)
@@ -88,60 +91,40 @@ df_mitigation <- df_mitigation %>%
 # pdq(0,0,0) = linear model / t.test (no detrending)
 # pdq(0,1,0) = liear model with differencing
 # pdq(1,1,0) = autoregressive model with differencing
-df_mitigation %>% 
+df_mitigation_p_values <- df_mitigation %>% 
   mutate(period = yearquarter(period)) %>%
-  select(starts_with("mean"), period, origin, lpr3) %>% 
-  pivot_longer(cols=starts_with("mean"), names_to = "mean_n") %>% 
-  as_tsibble(key = c(origin, mean_n), index = period) %>% 
-  model(arima = ARIMA(value ~ 1 + lpr3 + pdq(0,0,0) + PDQ(0,0,0))) %>% 
+  select(mean_1, period, origin, lpr3) %>% 
+  as_tsibble(key = origin, index = period) %>% 
+  model(arima = ARIMA(mean_1 ~ 1 + lpr3 + pdq(0,0,0) + PDQ(0,0,0))) %>% 
   coef() %>% 
-  select(!.model)
+  select(!.model) %>% 
+  filter(term == "lpr3") %>%
+  ungroup() %>% 
+  mutate(corrected_p = p.adjust(p.value, "fdr"),
+         significant = if_else(corrected_p < 0.05, "*", "")) 
+
+
+df_mitigation_p_values <- df_mitigation %>% 
+  filter(period == max(period)) %>% 
+  select(period, mean_1, origin) %>% 
+  left_join(df_mitigation_p_values, by="origin")
+  
+
 ```
+
+```{r}
+source("../src/individual_unique_diagnoses_functions.r")
+
+p <- save_mitigation_strategy_plot(df_mitigation, 
+                              "mitigation_constructed_p_values", 
+                              p_values=df_mitigation_p_values)
+
+p
+```
+
+
 
 Truncation
-Changepoints plotted on original time series
-```{r}
-
-source("src/change_point_detection.R")
-
-changepoint_plots <- list()
-for(truncation_level in unique(df_truncation$truncation)){
-  sub <- df_truncation %>% 
-    filter(truncation == truncation_level) %>% 
-    arrange(period)
-  p <- estimate_and_plot_changepoints(
-    sub$mean,
-    sub$period,
-    do_smoothing = FALSE,
-    detrend_method = "difference") +
-    labs(title = truncation_level)
-  
-  changepoint_plots[[truncation_level]] <- p
-}
-wrap_plots(changepoint_plots)
-
-```
-
-
-Plot original and detrended time series
-```{r}
-detrended_ts <- list()
-for(truncation_level in unique(df_truncation$truncation)){
-  sub <- df_truncation %>% 
-    filter(truncation == truncation_level) %>% 
-    arrange(period)
-  p <- plot_detrended_ts(sub$mean,
-                                 sub$period,
-                               detrending_method = "difference",
-                         do_smoothing = FALSE) +
-    labs(title = truncation_level)
-  
-  detrended_ts[[truncation_level]] <- p
-}
-
-wrap_plots(detrended_ts)
-
-```
 
 
 Hypothesis test: was there a change diagnoses during the transition?

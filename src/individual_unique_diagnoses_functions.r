@@ -1,10 +1,12 @@
 library("ggrepel")
 
-individual_unique_diagnoses_figure_folder <- "E:/Users/adminmanber/Desktop/LPR2-LPR3/figures/individual_unique_diagnoses_analyses/"
+#individual_unique_diagnoses_figure_folder <- "E:/Users/adminmanber/Desktop/LPR2-LPR3/figures/individual_unique_diagnoses_analyses/"
+individual_unique_diagnoses_figure_folder <- here::here("figures", "individual_unique_diagnoses_analyses")
+if (!dir.exists(individual_unique_diagnoses_figure_folder)) {dir.create(individual_unique_diagnoses_figure_folder, recursive=TRUE)}
 
 truncation_levels = c("FXX.XX*", "FXX.X*", "FXX*", "FX*")
 
-save_truncation_plot <- function(df, filename) {
+save_truncation_plot <- function(df, filename, p_values=NULL) {
     gg <- ggplot(df, aes(x=as.Date(period),
                             y=mean,
                             ymin=lcl,
@@ -32,7 +34,7 @@ save_truncation_plot <- function(df, filename) {
         data = filter(df, period == ymd("2020-10-01")),
         direction = "y",
         hjust = 0,
-        nudge_x = 100,
+        nudge_x = 150,
         xlim = c(-Inf, Inf), ylim = c(-Inf, Inf),
         color = "white",
         force = 0.2,
@@ -77,8 +79,22 @@ save_truncation_plot <- function(df, filename) {
                 date_labels = "%Y",
                 limits=c(ymd("2013-01-01"), ymd("2021-07-01")))
     
+    if(!is.null(p_values)){
+      
+        gg <- gg + 
+            geom_text(data = p_values,
+                    aes(label = significant,
+                    color = truncation,
+                            ymin = NULL,
+                            ymax = NULL),
+                    size = 5,
+                    hjust = -1.3,
+                    show.legend=FALSE) 
+    }
+
 
     ggsave(paste0(individual_unique_diagnoses_figure_folder, filename, ".png"), 
+        plot=gg,
         width = 10, 
         height = 5, 
         dpi = 600)
@@ -86,17 +102,17 @@ save_truncation_plot <- function(df, filename) {
     return(gg)
 }
 
-save_mitigation_strategy_plot <- function(df, filename) {
+save_mitigation_strategy_plot <- function(df, filename, p_values=NULL) {
     plot_colors <- c("steelblue", "forestgreen", "#C93312", "#DC863B", "#E1AF00" , "slateblue4")
 
     gg <- ggplot(df, 
         aes(x=as.Date(period),
                     y=mean_1, 
-                    ymin=lcl_1, 
-                    ymax=ucl_1
-            )
+                    color=origin)
         ) +
         geom_linerange(
+            aes(ymin=lcl_1, 
+                ymax=ucl_1),
             alpha = 0.1,
         ) +
         geom_point(
@@ -115,7 +131,7 @@ save_mitigation_strategy_plot <- function(df, filename) {
             data = filter(df, period == ymd("2020-10-01")),
             direction = "y",
             hjust = 0,
-            nudge_x = 100,
+            nudge_x = 150,
             xlim = c(-Inf, Inf), ylim = c(-Inf, Inf),
             color = "white",
             force = 0.2,
@@ -141,7 +157,17 @@ save_mitigation_strategy_plot <- function(df, filename) {
                 date_labels = "%Y",
                 limits=c(ymd("2013-01-01"), ymd("2021-07-01")))
 
-    ggsave(paste0(individual_unique_diagnoses_figure_folder, filename, ".png"), 
+    if(!is.null(p_values)){
+        gg <- gg + 
+            geom_text(data = p_values,
+                    aes(label = significant),
+                    size = 5,
+                    hjust = -1.3,
+                    show.legend=FALSE)
+    }
+
+    ggsave(here::here(individual_unique_diagnoses_figure_folder, str_c(filename, ".png")),
+        plot=gg, 
         width = 10, 
         height = 5, 
         dpi = 600)
