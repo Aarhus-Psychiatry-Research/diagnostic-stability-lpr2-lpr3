@@ -7,18 +7,13 @@ editor_options:
 source("0_setup_env.r")
 ```
 
-```{r}
-df_outpatient_with_periods <- df_raw_outpatient %>% 
-  filter(ambbesoeg == 1) %>% 
-  add_LPR23_quarter_column()
-
-log_time()
-```
-## Outpatient, naive useage of kontakt and forløbsansvar
+# Outpatient, naive useage of kontakt and forløbsansvar
 
 Reduce complexity
 ```{r}
-df_outpatient_for_subchapter <- df_outpatient_with_periods %>% 
+df_outpatient_for_subchapter <- df_raw_outpatient %>% 
+  filter(ambbesoeg == 1) %>% 
+  add_LPR23_quarter_column() %>% 
   select(dw_ek_borger,
          datotid_start,
          dw_sk_lpr3forloebsansvar,
@@ -32,11 +27,13 @@ df_outpatient_for_subchapter <- df_outpatient_with_periods %>%
   truncate_diagnosis_to_letter_and_digit()
 ```
 
-Calculate which proportion of patients have gotten a diagnosis within a subchapter for the period.
+## Naive
 ```{r}
 df_unique_in_period_outpatient <- df_outpatient_for_subchapter %>%  
   add_column_unique_pt_in_period() 
+```
 
+```{r}
 df_unique_with_diagnosis_outpatient <- df_outpatient_for_subchapter %>% 
   add_column_n_with_diagnosis_in_period()
 
@@ -45,6 +42,7 @@ df_prop_diag_outpatient <- calc_prop_of_unique_patients_with_diagnosis(df_unique
 log_time()
 ```
 
+## Most severe
 Recode with most severe from sequence
 ```{r}
 source("../src/functions.r")
@@ -63,7 +61,7 @@ log_time()
 ```
 
 
-Recode with final visit's diagnosis in sequence
+## Final visit
 ```{r}
 source("../src/functions.r")
 df_outpatient_for_subchapter_final_visit_only <- df_outpatient_for_subchapter %>% 
@@ -79,9 +77,7 @@ log_time()
 
 ```
 
-## Plotting
-
-# Examine mitigation strategies
+# Plotting
 ## Forloebsansvar and LPR2 kontakt
 ```{r}
 
@@ -139,6 +135,7 @@ log_time()
 
 ```
 
+## Testing
 ```{r}
 pacman::p_load(fable, tsibble, feasts, urca)
 

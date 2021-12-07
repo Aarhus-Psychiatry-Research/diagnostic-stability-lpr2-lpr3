@@ -9,45 +9,46 @@ editor_options:
 source("0_setup_env_unique_diagnoses.r")
 ```
 
+
+
 ## Data wrangling 
+Common base
+```{r}
+df_raw_outpatient_preprocessed <- df_raw_outpatient %>% 
+  select(dw_ek_borger, 
+         datotid_start, 
+         adiagnosekode, 
+         ambbesoeg,
+         dw_sk_kontakt,
+         dw_sk_lpr3forloebsansvar) %>% 
+  filter(ambbesoeg == 1) %>% 
+  keep_only_psych_visits() %>% 
+  add_LPR23_quarter_column() %>%
+  filter(period > ymd("2012-05-01"))
+```
+
 Base dataframes
 ```{r}
-df_outpatient_for_individual <- df_raw_outpatient %>%
-  select(dw_ek_borger, 
-         datotid_start, 
-         adiagnosekode, 
-         ambbesoeg) %>% 
-  filter(ambbesoeg == 1) %>% 
-  add_LPR23_quarter_column() %>% 
-  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE) %>% 
-  filter(period > ymd("2012-05-01")) # Remove weird periods
+source("../src/functions.r")
+df_outpatient_for_individual <- df_raw_outpatient_preprocessed %>%
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels=TRUE)
+```
 
-df_outpatient_most_severe <- df_raw_outpatient %>%
-  select(dw_ek_borger, 
-         datotid_start, 
-         adiagnosekode, 
-         ambbesoeg, 
-         dw_sk_lpr3forloebsansvar, 
-         dw_sk_kontakt) %>% 
-  filter(ambbesoeg == 1) %>% 
-  add_LPR23_quarter_column() %>% 
+```{r}
+df_outpatient_most_severe <- df_raw_outpatient_preprocessed %>%
   recode_with_most_severe_diagnosis_for_sequence(dw_sk_kontakt, dw_sk_lpr3forloebsansvar, two_columns = TRUE) %>% 
-  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE) %>% 
-  filter(period > ymd("2012-05-01")) # Remove weird periods
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels=FALSE)
+```
 
-df_outpatient_last_visit_only <- df_raw_outpatient %>%
-  select(dw_ek_borger,
-         datotid_start, 
-         adiagnosekode, 
-         ambbesoeg, 
-         dw_sk_lpr3forloebsansvar,
-         dw_sk_kontakt) %>% 
-  filter(ambbesoeg == 1) %>% 
-  recode_diagnoses_with_last_in_sequence(dw_sk_kontakt, dw_sk_lpr3forloebsansvar, two_columns = TRUE) %>% 
-  add_LPR23_quarter_column() %>%
-  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE) %>% 
-  filter(period > ymd("2012-05-01")) # Remove weird periods
+```{r}
+df_outpatient_last_visit_only <- df_raw_outpatient_preprocessed %>% 
+  recode_diagnoses_with_last_in_sequence(dw_sk_kontakt, 
+                                         dw_sk_lpr3forloebsansvar, 
+                                         two_columns = TRUE) %>% 
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels=FALSE)
+```
 
+```{r}
 log_time()
 
 ```
@@ -64,9 +65,9 @@ df_truncation <- df_outpatient_for_individual %>%
     pivot_wider(names_from=unit,
                 values_from=value) %>% 
                 mutate(truncation = case_when(truncation == 1 ~ "FX*",
-                truncation == 2 ~ "FXX*",
-                truncation == 3 ~ "FXX.X*",
-                truncation == 4 ~ "FXX.XX*"))
+                truncation == 2 ~ "FXX",
+                truncation == 3 ~ "FXX.X",
+                truncation == 4 ~ "FXX.XX"))
 ```
 
 ## Plotting
@@ -94,7 +95,8 @@ df_mitigation <- df_outpatient_for_individual %>%
                                 origin == "final_visit" ~ "Final visit",
                                 origin == "most_severe" ~ "Most severe"))
 
-mitigation_plot <- save_mitigation_strategy_plot(df_mitigation)
+mitigation_plot <- save_mitigation_strategy_plot(df_mitigation, 
+                                                 filename="mitigation_naive")
 
 mitigation_plot
 ```
@@ -103,7 +105,7 @@ mitigation_plot
 source("../src/individual_unique_diagnoses_functions.r")
 log_time()
 
-save_combined_plots(hierarchy_plot, mitigation_plot, "combined_individual_unique_diagnoses")
+save_combined_plots(truncation_plot, mitigation_plot, "combined_individual_unique_diagnoses")
 ```
 
 # Testing

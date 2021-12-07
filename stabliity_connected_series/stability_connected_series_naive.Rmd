@@ -6,26 +6,10 @@ output:
 always_allow_html: yes
 ---
 ```{r}
-library(DBI)
-library(data.table)
-library(dtplyr)
-library(dplyr, warn.conflicts = FALSE)
-library(lubridate)
-library(ggplot2)
-library(stringr)
-library(tidyr)
-library(ggalluvial)
-
-conn <- DBI::dbConnect(
-  odbc::odbc(),
-  Driver = "SQL Server",
-  Server = "BI-DPA-PROD",
-  database = "USR_PS_Forsk",
-  Trusted_Connection = "TRUE"
-)
+pacman::p_load(DBI, data.table, dtply, dplyr, lubridate, ggplot2, stringr, tidyr, ggalluvial, here)
 
 source("E:/Users/adminmanber/Desktop/FeasibilityMapper/utils.r")
-source("../src/functions.r")
+source(here("src", "functions.r"))
 ```
 
 ##################
@@ -33,15 +17,15 @@ source("../src/functions.r")
 ##################
 ```{r}
 df_raw <- get_fct("FOR_besoeg_fysiske_fremmoeder") %>% 
-  filter(dw_sk_lpr3forloebsansvar != -1) %>% 
-  clean_sql_import() 
+  clean_sql_import()
 
 df <- df_raw %>% 
+  keep_only_psych_visits() %>% 
   select("dw_ek_borger", 
                "datotid_start", 
                "dw_sk_lpr3forloebsansvar", 
                "adiagnosekode") %>% 
-  mutate(adiagnosekode = substring(adiagnosekode, 1, 2))
+  mutate(adiagnosekode = substring(adiagnosekode, 1, 2)) 
 
 log_time()
 
@@ -98,7 +82,7 @@ log_time()
 ```
 
 ```{r}
-source("src/stability_connected_series_functions.r")
+source(here("src", "stability_connected_series_functions.r"))
 
 save_alluvial_plot()
 

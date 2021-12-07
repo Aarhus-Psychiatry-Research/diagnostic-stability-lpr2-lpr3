@@ -116,20 +116,21 @@ recode_diagnoses_with_last_in_sequence <- function(df, id_column_1, id_column_2,
 gen_unique_diagnoses_pr_patient <- function(df, confidence_intervals=TRUE, truncation_levels=TRUE) {
     # Count number of unique diagnoses at different truncation intervals
 
+    # Handle main
     if (truncation_levels == TRUE) {
       df <- df %>% 
-      group_by(period, dw_ek_borger) %>% 
-      summarise(unique_diagnoses_1 = n_distinct(period, substr(adiagnosekode, 1, 1), dw_ek_borger),
-                  unique_diagnoses_2 = n_distinct(period, substr(adiagnosekode, 1, 2), dw_ek_borger),
-                  unique_diagnoses_3 = n_distinct(period, substr(adiagnosekode, 1, 3), dw_ek_borger),
-                  unique_diagnoses_4 = n_distinct(period, substr(adiagnosekode, 1, 4), dw_ek_borger))
+        group_by(period, dw_ek_borger) %>% 
+        summarise(unique_diagnoses_1 = n_distinct(period, substr(adiagnosekode, 1, 2), dw_ek_borger),
+                    unique_diagnoses_2 = n_distinct(period, substr(adiagnosekode, 1, 3), dw_ek_borger),
+                    unique_diagnoses_3 = n_distinct(period, substr(adiagnosekode, 1, 4), dw_ek_borger),
+                    unique_diagnoses_4 = n_distinct(period, substr(adiagnosekode, 1, 5), dw_ek_borger))
     } else {
       df <- df %>% 
         group_by(period, dw_ek_borger) %>% 
-        summarise(unique_diagnoses_1 = n_distinct(period, substr(adiagnosekode, 1, 2), dw_ek_borger))
+        summarise(unique_diagnoses_1 = n_distinct(period, substr(adiagnosekode, 1, 3), dw_ek_borger))
     }
     
-
+    # Handle confidence intervals
     if (confidence_intervals == TRUE) {
       if (truncation_levels == TRUE) {
         # Generate confidence intervals

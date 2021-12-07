@@ -4,29 +4,25 @@ editor_options:
   chunk_output_type: inline
 ---
 ```{r}
-source("0_setup_env_subchapter.r")
+source("0_setup_env.r")
 ```
 
 # Run 1a_outpatient_naive.rmd first!
-
-## Outpatient, construct ambulatory sequences
+## Construct sequences
 ```{r}
 source("../src/functions.r")
 df_constructed_outpatient_series <- df_outpatient_for_subchapter %>% 
+  keep_only_psych_visits() %>% 
   construct_sequences(clinic_id_col=clinic, 
                       patient_id_col=dw_ek_borger, 
                       date_col=datotid_start, 
                       threshold_months=3, 
                       verbose = TRUE)
 
-# TODO: 
-# 0. Generate a unique ID for each "sequence" (patient + clinic)
-# 1. Process each unique entity of outpatient-clinic + patient-identifier uniquely
-# 2. Split sequences if there are gaps > n months
 
 ```
 
-### Constructed series, final visit
+### Final visit
 ```{r}
 df_constructed_sequence_final_visit_only <- df_constructed_outpatient_series %>% 
   recode_diagnoses_with_last_in_sequence(constructed_id)
@@ -38,7 +34,7 @@ df_prop_diag_constructed_sequence_final_visit_only <- calc_prop_of_unique_patien
                                                      df_n_with_diag_in_period_constructed_final_diag)
 
 ```
-### Constructed series, most severe visit
+### Most severe visit
 ```{r}
 df_constructed_sequence_most_severe_diag <- df_constructed_outpatient_series %>% 
   recode_with_most_severe_diagnosis_for_sequence(constructed_id)

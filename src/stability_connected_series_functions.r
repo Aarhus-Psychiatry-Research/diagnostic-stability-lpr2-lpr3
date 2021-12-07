@@ -1,8 +1,8 @@
 stability_connected_series_figure_folder <- "E:/Users/adminmanber/Desktop/LPR2-LPR3/figures/stability_of_a_connected_series_analyses/"
 
-source("src/ggplot_defaults.r")
+source(here("src", "ggplot_defaults.r"))
 
-save_alluvial_plot <- function() {
+save_alluvial_plot <- function(df=df, filename="allu_first_last") {
     base_plot <- ggplot(allu_df_summarized, 
              aes(y = n, 
                  axis1 = first_diagnosis, 
@@ -44,7 +44,7 @@ save_alluvial_plot <- function() {
                     position = "top") +
     scale_y_continuous(n.breaks = NULL)
 
-    ggsave(paste0(stability_connected_series_figure_folder, "allu_first_last.png"), 
+    ggsave(paste0(stability_connected_series_figure_folder, filename, ".png"), 
         width = 20,
         height = 20,
         dpi = 100)
