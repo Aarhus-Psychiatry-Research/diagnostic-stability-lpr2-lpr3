@@ -9,30 +9,14 @@ editor_options:
 source("0_setup_env_unique_diagnoses.r")
 ```
 
-## Data wrangling 
-Base dataframes
-```{r}
-df_outpatient_preprocessed <- df_raw_outpatient %>%
-  select(dw_ek_borger,
-         datotid_start, 
-         adiagnosekode, 
-         ambbesoeg, 
-         dw_sk_lpr3forloebsansvar,
-         dw_sk_kontakt,
-         shakgeografiafskode_besoeg) %>% 
-  rename(clinic = shakgeografiafskode_besoeg) %>% 
-  add_LPR23_quarter_column() %>% 
-  filter(period > ymd("2012-05-01")) %>% 
-  mutate(constructed_id = paste0(dw_ek_borger, clinic)) # Remove weird periods
-```
-
-
-# Construct_sequences
+# Data wrangling 
+## Base pre-processing
 ```{r}
 source("../src/functions.r")
 
 df_outpatient_preprocessed <- df_raw_outpatient %>%
   mutate(no_threshold_constructed_id = paste0(dw_ek_borger, shakgeografiafskode_besoeg)) %>%
+  keep_only_psych_visits() %>% 
   select(dw_ek_borger,
          datotid_start,
          adiagnosekode,
@@ -40,13 +24,17 @@ df_outpatient_preprocessed <- df_raw_outpatient %>%
          dw_sk_lpr3forloebsansvar,
          dw_sk_kontakt,
          shakgeografiafskode_besoeg,
-         no_threshold_constructed_id)
+         no_threshold_constructed_id) %>% 
+  add_LPR23_quarter_column() %>% 
+  filter(period > ymd("2012-05-01"))
 ```
 
+# No threshold
+## Construct sequences
 ```{r}
 source("../src/functions.r")
 
-df_outpatient_preprocessed_no_threshold <- df_outpatient_preprocessed %>% 
+df_outpatient_constructed_no_threshold <- df_outpatient_preprocessed %>% 
   construct_sequences(clinic_id_col=shakgeografiafskode_besoeg,
                       patient_id_col=dw_ek_borger,
                       date_col=datotid_start,
@@ -55,28 +43,18 @@ df_outpatient_preprocessed_no_threshold <- df_outpatient_preprocessed %>%
 ```
 
 ```{r}
-df_outpatient_preprocessed_3m_threshold <- df_outpatient_preprocessed %>%
-  construct_sequences(clinic_id_col=shakgeografiafskode_besoeg,
-                      patient_id_col=dw_ek_borger,
-                      date_col=datotid_start,
-                      threshold_months=3,
-                      verbose = TRUE)
-  
-```
+source("../src/functions.r")
 
-```{r}
-df_outpatient_constructed_default <- df_outpatient_with_constructed_sequences %>%
-  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE)
+df_outpatient_constructed_no_threshold_default <- df_outpatient_constructed_no_threshold %>%
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels=FALSE)
 
-df_outpatient_constructed_most_severe <- df_outpatient_with_constructed_sequences %>%
+df_outpatient_constructed_no_threshold_most_severe <- df_outpatient_constructed_no_threshold %>%
   recode_with_most_severe_diagnosis_for_sequence(constructed_id) %>% 
-  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE)
-```
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels=FALSE)
 
-```{r}
-df_outpatient_constructed_last_visit_only <- df_outpatient_with_constructed_sequences %>%
+df_outpatient_constructed_no_threshold_last_visit_only <- df_outpatient_constructed_no_threshold %>%
   recode_diagnoses_with_last_in_sequence(constructed_id) %>% 
-  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE)
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels=FALSE)
 
 log_time()
 
@@ -87,21 +65,233 @@ log_time()
 log_time()
 source("../src/individual_unique_diagnoses_functions.r")
 
-df_mitigation_constructed_plot <- df_outpatient_constructed_default %>% 
+df_mitigation_constructed_no_threshold_plot <- df_outpatient_constructed_no_threshold_default %>% 
         filter(period > ymd("2012-12-31")) %>% 
         mutate(origin = "outpatient_all") %>% 
-        bind_rows(mutate(df_outpatient_constructed_most_severe, origin = "most_severe")) %>% 
-        bind_rows(mutate(df_outpatient_constructed_last_visit_only, origin = "final_visit")) %>% 
+        bind_rows(mutate(df_outpatient_constructed_no_threshold_most_severe, origin = "most_severe")) %>% 
+        bind_rows(mutate(df_outpatient_constructed_no_threshold_last_visit_only, origin = "final_visit")) %>% 
         mutate(period = as.Date(period)) %>% 
         filter(period > ymd("2019-01-01") | origin == "outpatient_all") %>% 
         mutate(origin = case_when(origin == "outpatient_all" ~ "Unmitigated",
                                 origin == "final_visit" ~ "Final visit",
                                 origin == "most_severe" ~ "Most severe"))
 
-mitigation_constructed_plot <- save_mitigation_strategy_plot(df_mitigation_constructed_plot, "mitigation_constructed")
+mitigation_constructed_no_threshold_plot <- save_mitigation_strategy_plot(df_mitigation_constructed_no_threshold_plot, "mitigation_constructed_no_threshold")
 
-mitigation_constructed_plot
+mitigation_constructed_no_threshold_plot
 ```
+
+# 1m threshold
+```{r}
+source("../src/functions.r")
+
+df_outpatient_constructed_1m_threshold <- df_outpatient_preprocessed %>%
+  construct_sequences(clinic_id_col=shakgeografiafskode_besoeg,
+                      patient_id_col=dw_ek_borger,
+                      date_col=datotid_start,
+                      threshold_months=1,
+                      verbose = TRUE)
+  
+```
+
+## Construct ssequences
+```{r}
+df_outpatient_constructed_1m_threshold_default <- df_outpatient_constructed_1m_threshold %>%
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels=FALSE)
+
+df_outpatient_constructed_1m_threshold_most_severe <- df_outpatient_constructed_1m_threshold %>%
+  recode_with_most_severe_diagnosis_for_sequence(constructed_id) %>% 
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels=FALSE)
+
+df_outpatient_constructed_1m_threshold_last_visit_only <- df_outpatient_constructed_1m_threshold %>%
+  recode_diagnoses_with_last_in_sequence(constructed_id) %>% 
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels=FALSE)
+
+
+log_time()
+
+```
+
+## Plotting
+```{r fig.height=5, fig.width=10}
+log_time()
+source("../src/individual_unique_diagnoses_functions.r")
+
+df_mitigation_constructed_1m_threshold_plot <- df_outpatient_constructed_1m_threshold_default %>% 
+        filter(period > ymd("2012-12-31")) %>% 
+        mutate(origin = "outpatient_all") %>% 
+        bind_rows(mutate(df_outpatient_constructed_1m_threshold_most_severe, origin = "most_severe")) %>% 
+        bind_rows(mutate(df_outpatient_constructed_1m_threshold_last_visit_only, origin = "final_visit")) %>% 
+        mutate(period = as.Date(period)) %>% 
+        filter(period > ymd("2019-01-01") | origin == "outpatient_all") %>% 
+        mutate(origin = case_when(origin == "outpatient_all" ~ "Unmitigated",
+                                origin == "final_visit" ~ "Final visit",
+                                origin == "most_severe" ~ "Most severe"))
+
+mitigation_constructed_1m_threshold_plot <- save_mitigation_strategy_plot(df_mitigation_constructed_1m_threshold_plot, "mitigation_constructed_1m_threshold")
+
+mitigation_constructed_1m_threshold_plot
+```
+
+
+# 2m threshold
+```{r}
+source("../src/functions.r")
+
+df_outpatient_constructed_2m_threshold <- df_outpatient_preprocessed %>%
+  construct_sequences(clinic_id_col=shakgeografiafskode_besoeg,
+                      patient_id_col=dw_ek_borger,
+                      date_col=datotid_start,
+                      threshold_months=2,
+                      verbose = TRUE)
+  
+```
+
+## Construct ssequences
+```{r}
+df_outpatient_constructed_2m_threshold_default <- df_outpatient_constructed_2m_threshold %>%
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels=FALSE)
+
+df_outpatient_constructed_2m_threshold_most_severe <- df_outpatient_constructed_2m_threshold %>%
+  recode_with_most_severe_diagnosis_for_sequence(constructed_id) %>% 
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels=FALSE)
+
+df_outpatient_constructed_2m_threshold_last_visit_only <- df_outpatient_constructed_2m_threshold %>%
+  recode_diagnoses_with_last_in_sequence(constructed_id) %>% 
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels=FALSE)
+
+
+log_time()
+
+```
+
+## Plotting
+```{r fig.height=5, fig.width=10}
+log_time()
+source("../src/individual_unique_diagnoses_functions.r")
+
+df_mitigation_constructed_2m_threshold_plot <- df_outpatient_constructed_2m_threshold_default %>% 
+        filter(period > ymd("2012-12-31")) %>% 
+        mutate(origin = "outpatient_all") %>% 
+        bind_rows(mutate(df_outpatient_constructed_2m_threshold_most_severe, origin = "most_severe")) %>% 
+        bind_rows(mutate(df_outpatient_constructed_2m_threshold_last_visit_only, origin = "final_visit")) %>% 
+        mutate(period = as.Date(period)) %>% 
+        filter(period > ymd("2019-01-01") | origin == "outpatient_all") %>% 
+        mutate(origin = case_when(origin == "outpatient_all" ~ "Unmitigated",
+                                origin == "final_visit" ~ "Final visit",
+                                origin == "most_severe" ~ "Most severe"))
+
+mitigation_constructed_2m_threshold_plot <- save_mitigation_strategy_plot(df_mitigation_constructed_2m_threshold_plot, "mitigation_constructed_2m_threshold")
+
+mitigation_constructed_2m_threshold_plot
+```
+
+
+# 3m threshold
+```{r}
+source("../src/functions.r")
+
+df_outpatient_constructed_3m_threshold <- df_outpatient_preprocessed %>%
+  construct_sequences(clinic_id_col=shakgeografiafskode_besoeg,
+                      patient_id_col=dw_ek_borger,
+                      date_col=datotid_start,
+                      threshold_months=3,
+                      verbose = TRUE)
+  
+```
+
+## Construct ssequences
+```{r}
+df_outpatient_constructed_3m_threshold_default <- df_outpatient_constructed_3m_threshold %>%
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels=FALSE)
+
+df_outpatient_constructed_3m_threshold_most_severe <- df_outpatient_constructed_3m_threshold %>%
+  recode_with_most_severe_diagnosis_for_sequence(constructed_id) %>% 
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels=FALSE)
+
+df_outpatient_constructed_3m_threshold_last_visit_only <- df_outpatient_constructed_3m_threshold %>%
+  recode_diagnoses_with_last_in_sequence(constructed_id) %>% 
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels=FALSE)
+
+
+log_time()
+
+```
+
+## Plotting
+```{r fig.height=5, fig.width=10}
+log_time()
+source("../src/individual_unique_diagnoses_functions.r")
+
+df_mitigation_constructed_3m_threshold_plot <- df_outpatient_constructed_3m_threshold_default %>% 
+        filter(period > ymd("2012-12-31")) %>% 
+        mutate(origin = "outpatient_all") %>% 
+        bind_rows(mutate(df_outpatient_constructed_3m_threshold_most_severe, origin = "most_severe")) %>% 
+        bind_rows(mutate(df_outpatient_constructed_3m_threshold_last_visit_only, origin = "final_visit")) %>% 
+        mutate(period = as.Date(period)) %>% 
+        filter(period > ymd("2019-01-01") | origin == "outpatient_all") %>% 
+        mutate(origin = case_when(origin == "outpatient_all" ~ "Unmitigated",
+                                origin == "final_visit" ~ "Final visit",
+                                origin == "most_severe" ~ "Most severe"))
+
+mitigation_constructed_3m_threshold_plot <- save_mitigation_strategy_plot(df_mitigation_constructed_3m_threshold_plot, "mitigation_constructed_3m_threshold")
+
+mitigation_constructed_3m_threshold_plot
+```
+
+# 6m threshold
+```{r}
+source("../src/functions.r")
+
+df_outpatient_constructed_6m_threshold <- df_outpatient_preprocessed %>%
+  construct_sequences(clinic_id_col=shakgeografiafskode_besoeg,
+                      patient_id_col=dw_ek_borger,
+                      date_col=datotid_start,
+                      threshold_months=6,
+                      verbose = TRUE)
+  
+```
+
+## Construct ssequences
+```{r}
+df_outpatient_constructed_6m_threshold_default <- df_outpatient_constructed_6m_threshold %>%
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels=FALSE)
+
+df_outpatient_constructed_6m_threshold_most_severe <- df_outpatient_constructed_6m_threshold %>%
+  recode_with_most_severe_diagnosis_for_sequence(constructed_id) %>% 
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels=FALSE)
+
+df_outpatient_constructed_6m_threshold_last_visit_only <- df_outpatient_constructed_6m_threshold %>%
+  recode_diagnoses_with_last_in_sequence(constructed_id) %>% 
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels=FALSE)
+
+
+log_time()
+
+```
+
+## Plotting
+```{r fig.height=5, fig.width=10}
+log_time()
+source("../src/individual_unique_diagnoses_functions.r")
+
+df_mitigation_constructed_6m_threshold_plot <- df_outpatient_constructed_6m_threshold_default %>% 
+        filter(period > ymd("2012-12-31")) %>% 
+        mutate(origin = "outpatient_all") %>% 
+        bind_rows(mutate(df_outpatient_constructed_6m_threshold_most_severe, origin = "most_severe")) %>% 
+        bind_rows(mutate(df_outpatient_constructed_6m_threshold_last_visit_only, origin = "final_visit")) %>% 
+        mutate(period = as.Date(period)) %>% 
+        filter(period > ymd("2019-01-01") | origin == "outpatient_all") %>% 
+        mutate(origin = case_when(origin == "outpatient_all" ~ "Unmitigated",
+                                origin == "final_visit" ~ "Final visit",
+                                origin == "most_severe" ~ "Most severe"))
+
+mitigation_constructed_6m_threshold_plot <- save_mitigation_strategy_plot(df_mitigation_constructed_6m_threshold_plot, "mitigation_constructed_6m_threshold")
+
+mitigation_constructed_6m_threshold_plot
+```
+
+
 
 # Testing
 Mitigation

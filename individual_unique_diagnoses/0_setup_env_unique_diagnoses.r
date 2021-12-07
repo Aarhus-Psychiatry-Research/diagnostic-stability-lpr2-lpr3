@@ -6,6 +6,7 @@ options(lubridate.fasttime = TRUE)
 source("E:/Users/adminmanber/Desktop/FeasibilityMapper/utils.r")
 source("../src/functions.r")
 source("../src/individual_unique_diagnoses_functions.r")
+source("../src/ggplot_defaults.r")
 
 df_raw_outpatient <- get_fct("FOR_besoeg_fysiske_fremmoeder") %>% 
   clean_sql_import()

@@ -139,7 +139,8 @@ save_mitigation_strategy_plot <- function(df, filename) {
         scale_x_date(breaks = seq(as.Date("2013-01-01"), as.Date("2021-07-01"), by="12 months"),
                 date_minor_breaks = "3 months",
                 date_labels = "%Y",
-                limits=c(ymd("2013-01-01"), ymd("2021-07-01")))
+                limits=c(ymd("2013-01-01"), ymd("2021-07-01"))) +
+        scale_y_continuous(limits = c(1, 1.05))
 
     ggsave(paste0(individual_unique_diagnoses_figure_folder, filename, ".png"), 
         width = 10, 
