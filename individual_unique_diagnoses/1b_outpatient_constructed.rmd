@@ -113,7 +113,7 @@ df_mitigation_p_values <- df_mitigation %>%
 ```
 
 ```{r}
-source("../src/individual_unique_diagnoses_functions.r")
+source(here("src", "individual_unique_diagnoses_functions.r"))
 
 p <- save_mitigation_strategy_plot(df_mitigation, 
                               "mitigation_constructed_p_values", 
