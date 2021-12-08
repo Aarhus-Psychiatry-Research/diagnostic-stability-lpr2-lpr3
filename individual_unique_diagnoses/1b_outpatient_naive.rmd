@@ -136,7 +136,7 @@ df_mitigation_without_first_quarters_p_values <- df_mitigation_without_first_qua
   select(mean_2, period, origin, lpr3) %>% 
  # pivot_longer(cols=starts_with("mean"), names_to = "mean_n") %>% 
   as_tsibble(key = origin, index = period) %>% 
-  model(arima = ARIMA(mean_1 ~ 1 + lpr3 + pdq(0,0,0) + PDQ(0,0,0))) %>% 
+  model(arima = ARIMA(mean_2 ~ 1 + lpr3 + pdq(0,0,0) + PDQ(0,0,0))) %>% 
   coef() %>% 
   select(!.model) %>% 
   filter(term == "lpr3") %>%
