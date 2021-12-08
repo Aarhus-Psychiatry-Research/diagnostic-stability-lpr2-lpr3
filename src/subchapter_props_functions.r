@@ -10,12 +10,23 @@ format_quarters <- function(x) {
   #paste(c("Q1","Q2","Q3","Q4")[quart], year)
 }
 
-subchapter_figure_folder <- "E:/Users/adminmanber/Desktop/LPR2-LPR3/figures/subchapter_analyses/"
 
-graph_subchapter_props <- function(df, filename, date_range, with_mitigation = TRUE, ylabel = "") {
+subchapter_figure_folder <- here::here("figures", "subchapter_analyses")
+if (!dir.exists(subchapter_figure_folder)) {dir.create(subchapter_figure_folder, recursive=TRUE)}
+
+graph_subchapter_props <- function(
+    df, 
+    filename, 
+    date_range, 
+    with_mitigation = TRUE, 
+    ylabel = "", 
+    p_values = NULL,
+    nudge_frac=0.02,
+    nudge_constant=0.02) {
     library("patchwork")
     library("gridExtra")
-    folder <- "E:/Users/adminmanber/Desktop/LPR2-LPR3/figures/"
+    library("here")
+
     df <- df
 
     if (with_mitigation) {
@@ -66,12 +77,6 @@ graph_subchapter_props <- function(df, filename, date_range, with_mitigation = T
         x = "Quarter"
     )
 
-
-    same_y_axes <- base_plot +
-        facet_wrap(vars(adiagnosekode), nrow = 5)
-    free_y_axes <- base_plot + 
-        facet_wrap(vars(adiagnosekode), nrow = 5, scales = "free_y")
-
     # combined <- same_y_axes + free_y_axes +
     #     plot_annotation(tag_levels = "A") + 
     #     plot_layout(ncol = 1, 
@@ -82,22 +87,83 @@ graph_subchapter_props <- function(df, filename, date_range, with_mitigation = T
     # output <- gridExtra::grid.arrange(gt, 
     #             left = "Proportion of patients with incident main diagnosis from chapter",
     #             bottom = "Quarter")
-
     if (grepl("*free*", filename)) {
-        ggsave(str_c(subchapter_figure_folder, filename, ".png"), 
-            plot = free_y_axes,
-            width = 7, 
-            height = 10, 
-            dpi = 150)
 
-        free_y_axes
+        if(!is.null(p_values)){
+            # nudge prop a fraction of the original size for free axes
+            p_values <- p_values %>%
+                group_by(adiagnosekode) %>%
+                mutate(prop = nudge_min_and_max_values(prop, significant, nudge_frac=nudge_frac))
+
+            base_plot <- base_plot + 
+                geom_text(data = p_values,
+                        aes(label = significant,
+                            ymin = NULL,
+                            ymax = NULL),
+                            size = 5,
+                            hjust = -1.3,
+                            show.legend=FALSE) 
+        }
+
+        final_plot <- base_plot + 
+            facet_wrap(vars(adiagnosekode), nrow = 5, scales = "free_y")
+
+
     } else {
-        ggsave(str_c(subchapter_figure_folder, filename, ".png"), 
-            plot = same_y_axes,
+
+        if(!is.null(p_values)){
+            # nudge prop a constant for same axes
+            p_values <- p_values %>%
+                group_by(adiagnosekode) %>%
+                mutate(prop = nudge_min_and_max_values(prop, significant, nudge_constant=nudge_constant))
+
+            base_plot <- base_plot + 
+                geom_text(data = p_values,
+                        aes(label = significant,
+                                ymin = NULL,
+                                ymax = NULL),
+                        size = 5,
+                        hjust = -1.3,
+                        show.legend=FALSE) 
+        }
+
+
+        final_plot <- base_plot +
+            facet_wrap(vars(adiagnosekode), nrow = 5)
+
+    }
+
+    ggsave(here(subchapter_figure_folder, str_c(filename, ".png")), 
+            plot = final_plot,
             width = 7, 
             height = 10, 
             dpi = 150)
 
-        same_y_axes
+    return (final_plot)
+}
+
+# parameter for adding constant or multiplying 
+
+nudge_min_and_max_values <- function(x, label, nudge_constant=NULL, nudge_frac=NULL){
+    if(!is.null(nudge_constant) & !is.null(nudge_frac)){
+        stop("Set one of nudge_constant or nudge_frac")
     }
+    
+    has_content <- if_else(label == "", FALSE, TRUE)
+    if(sum(has_content) <= 1){
+        return(x)
+    }
+
+    min_x <- min(x[has_content])
+    max_x <- max(x[has_content])
+
+    if(!is.null(nudge_frac)){
+        x[x == min_x] = min_x * (1 - nudge_frac)
+        x[x == max_x] = max_x * (1 + nudge_frac)
+    }
+    if(!is.null(nudge_constant)){
+        x[x == min_x] = min_x - nudge_constant
+        x[x == max_x] = max_x + nudge_constant
+    }
+    return(x)
 }

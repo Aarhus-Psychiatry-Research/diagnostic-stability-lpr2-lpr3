@@ -4,7 +4,7 @@ pacman::p_load(DBI, dplyr, lubridate, ggplot2, stringr, tidyr, zoo)
 options(lubridate.fasttime = TRUE)
 
 source("E:/Users/adminmanber/Desktop/FeasibilityMapper/utils.r")
-source("../src/functions.r")
+source(here::here("src", "functions.r"))
 
 df_raw_outpatient <- get_fct("FOR_besoeg_fysiske_fremmoeder") %>% 
   clean_sql_import()
