@@ -11,7 +11,6 @@ format_quarters <- function(x) {
 }
 
 
-# try to avoid hard coding paths
 # subchapter_figure_folder <- "E:/Users/adminmanber/Desktop/LPR2-LPR3/figures/subchapter_analyses/"
 subchapter_figure_folder <- here::here("figures", "subchapter_analyses")
 if (!dir.exists(subchapter_figure_folder)) {dir.create(subchapter_figure_folder, recursive=TRUE)}
