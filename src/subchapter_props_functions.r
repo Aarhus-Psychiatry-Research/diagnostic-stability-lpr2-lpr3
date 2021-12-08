@@ -91,7 +91,6 @@ graph_subchapter_props <- function(
     # output <- gridExtra::grid.arrange(gt, 
     #             left = "Proportion of patients with incident main diagnosis from chapter",
     #             bottom = "Quarter")
-
     if (grepl("*free*", filename)) {
 
         if(!is.null(p_values)){
