@@ -110,7 +110,7 @@ df_examine_mitigation_constructed_sequences_without_first_quarters_p_values <- d
 
 
 ```{r}
-source("../src/subchapter_props_functions.r")
+source(here("src", "subchapter_props_functions.r"))
 
 
 graph_subchapter_props(df_examine_mitigation_constructed_sequences_without_first_quarters, 
