@@ -3,7 +3,7 @@ library("ggrepel")
 individual_unique_diagnoses_figure_folder <- here::here("figures", "individual_unique_diagnoses_analyses")
 if (!dir.exists(individual_unique_diagnoses_figure_folder)) {dir.create(individual_unique_diagnoses_figure_folder, recursive=TRUE)}
 
-truncation_levels = c("FXX.XX*", "FXX.X*", "FXX*", "FX*")
+truncation_levels = c("FXX.XX", "FXX.X", "FXX", "FX")
 
 save_truncation_plot <- function(df, filename, p_values=NULL) {
     gg <- ggplot(df, aes(x=as.Date(period),
