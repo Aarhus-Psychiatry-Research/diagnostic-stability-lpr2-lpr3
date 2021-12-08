@@ -93,7 +93,7 @@ df_mitigation <- df_mitigation %>%
 # pdq(1,1,0) = autoregressive model with differencing
 df_mitigation_p_values <- df_mitigation %>% 
   mutate(period = yearquarter(period)) %>%
-  select(mean_1, period, origin, lpr3) %>% 
+  select(mean_2, period, origin, lpr3) %>% 
   as_tsibble(key = origin, index = period) %>% 
   model(arima = ARIMA(mean_1 ~ 1 + lpr3 + pdq(0,0,0) + PDQ(0,0,0))) %>% 
   coef() %>% 
