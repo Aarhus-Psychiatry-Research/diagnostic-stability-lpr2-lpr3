@@ -79,7 +79,6 @@ save_truncation_plot <- function(df, filename, p_values=NULL) {
                 limits=c(ymd("2013-01-01"), ymd("2021-07-01")))
     
     if(!is.null(p_values)){
-      
         gg <- gg + 
             geom_text(data = p_values,
                     aes(label = significant,
