@@ -72,8 +72,8 @@ df_truncation <- df_outpatient_for_individual %>%
 ## Plotting
 ```{r fig.height=5, fig.width=10}
 log_time()
-source("../src/ggplot_defaults.r")
-source("../src/individual_unique_diagnoses_functions.r")
+source(here("src", "ggplot_defaults.r"))
+source(here("src", "individual_unique_diagnoses_functions.r"))
 
 truncation_plot <- save_truncation_plot(df_truncation, "examine_truncation_individual_unique_diagnoses_by_quarter")
 
