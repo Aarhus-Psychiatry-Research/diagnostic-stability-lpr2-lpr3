@@ -147,7 +147,7 @@ df_mitigation_without_first_quarters_p_values <- df_mitigation_without_first_qua
 
 df_mitigation_without_first_quarters_p_values <- df_mitigation_without_first_quarters %>% 
   filter(period == max(period)) %>% 
-  select(period, mean_1, origin) %>% 
+  select(period, mean_2, origin) %>% 
   left_join(df_mitigation_without_first_quarters_p_values, by="origin") %>% 
   mutate(origin = case_when(origin == "outpatient_all" ~ "Unmitigated",
                                 origin == "final_visit" ~ "Final visit",
