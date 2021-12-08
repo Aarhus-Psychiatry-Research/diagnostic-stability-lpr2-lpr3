@@ -1,6 +1,5 @@
 library("ggrepel")
 
-#individual_unique_diagnoses_figure_folder <- "E:/Users/adminmanber/Desktop/LPR2-LPR3/figures/individual_unique_diagnoses_analyses/"
 individual_unique_diagnoses_figure_folder <- here::here("figures", "individual_unique_diagnoses_analyses")
 if (!dir.exists(individual_unique_diagnoses_figure_folder)) {dir.create(individual_unique_diagnoses_figure_folder, recursive=TRUE)}
 
