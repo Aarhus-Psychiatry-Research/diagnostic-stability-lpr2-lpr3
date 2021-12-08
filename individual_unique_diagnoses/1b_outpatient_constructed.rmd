@@ -106,7 +106,7 @@ df_mitigation_p_values <- df_mitigation %>%
 
 df_mitigation_p_values <- df_mitigation %>% 
   filter(period == max(period)) %>% 
-  select(period, mean_1, origin) %>% 
+  select(period, mean_2, origin) %>% 
   left_join(df_mitigation_p_values, by="origin")
   
 
