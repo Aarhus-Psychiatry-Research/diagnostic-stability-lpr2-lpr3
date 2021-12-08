@@ -139,35 +139,50 @@ log_time()
 
 ```
 
+
+# Now with p-values!
 ```{r}
 pacman::p_load(fable, tsibble, feasts, urca)
 
-# binary indicator for date in LPR2/LPR3
-df_mitigation_naive_without_first_quarters <- df_mitigation_naive_without_first_quarters %>% 
-  mutate(lpr3 = if_else(period < "2019-02-03", 0, 1)) 
-  
 
-# What to report? 
-# pdq(0,0,0) = linear model / t.test (no detrending)
-# pdq(0,1,0) = liear model with differencing
-# pdq(1,1,0) = autoregressive model with differencing
-df_mitigation_naive_without_first_quarters %>% 
-  mutate(period = yearquarter(period)) %>%
-  select(prop, adiagnosekode, period, origin, lpr3) %>% 
-  as_tsibble(key = c(origin, adiagnosekode), index = period) %>% 
-  model(arima = ARIMA(prop ~ 1 + lpr3 + pdq(0,0,0) + PDQ(0,0,0))) %>% 
-  coef() %>% 
-  select(!.model) %>% 
-  filter(term == "lpr3")
-```
-
-```{r}
-df_mitigation_naive_without_first_quarters %>% 
+df_mitigation_naive_without_first_quarters_p_values <- df_mitigation_naive_without_first_quarters %>% 
   mutate(lpr3 = if_else(period < "2019-02-03", 0, 1),
          period = yearquarter(period)) %>% 
   select(prop, adiagnosekode, period, origin, lpr3) %>% 
   as_tsibble(key = c(origin, adiagnosekode), index = period) %>% 
   model(arima = ARIMA(prop ~ 1 + lpr3 + pdq(0,0,0) + PDQ(0,0,0))) %>% 
   coef() %>% 
-  select(!.model)
+  select(!.model) %>% 
+  filter(term == "lpr3")
+
+# add the needed x (period) and y (prop) values for plotting 
+df_mitigation_naive_without_first_quarters_p_values <- df_mitigation_naive_without_first_quarters %>% 
+  filter(period == max(period)) %>% 
+  select(period, prop, origin, adiagnosekode) %>% 
+  left_join(df_mitigation_naive_without_first_quarters_p_values, by=c("origin", "adiagnosekode")) %>% 
+  mutate(corrected_p <- p.adjust(p.value, "fdr"),
+         significant = if_else(corrected_p < 0.05, "*", "")) 
 ```
+
+
+
+```{r}
+source("../src/subchapter_props_functions.r")
+
+
+graph_subchapter_props(df_mitigation_naive_without_first_quarters, 
+                       filename = "examine_mitigation_without_first_quarters_same_y_axes_with_p_values",
+                       date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
+                       ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
+                       p_values = df_mitigation_naive_without_first_quarters_p_values,
+                       nudge_constant = 0.02)
+
+
+graph_subchapter_props(df_mitigation_naive_without_first_quarters, 
+                       filename = "examine_mitigation_without_first_quarters_free_y_axes_with_p_values",
+                       date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
+                       ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
+                       p_values = df_mitigation_naive_without_first_quarters_p_values,
+                       nudge_frac = 0.02)
+```
+
