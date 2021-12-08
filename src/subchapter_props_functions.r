@@ -15,9 +15,6 @@ format_quarters <- function(x) {
 subchapter_figure_folder <- here::here("figures", "subchapter_analyses")
 if (!dir.exists(subchapter_figure_folder)) {dir.create(subchapter_figure_folder, recursive=TRUE)}
 
-
-
-
 graph_subchapter_props <- function(
     df, 
     filename, 
