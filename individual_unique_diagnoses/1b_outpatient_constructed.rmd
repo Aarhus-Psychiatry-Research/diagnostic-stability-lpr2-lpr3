@@ -68,18 +68,11 @@ log_time()
 log_time()
 source(here("src", "individual_unique_diagnoses_functions.r"))
 
-df_mitigation_constructed_no_threshold_plot <- df_outpatient_constructed_no_threshold_default %>%
-  filter(period > ymd("2012-12-31")) %>%
-  mutate(origin = "outpatient_all") %>%
-  bind_rows(mutate(df_outpatient_constructed_no_threshold_most_severe, origin = "most_severe")) %>%
-  bind_rows(mutate(df_outpatient_constructed_no_threshold_last_visit_only, origin = "final_visit")) %>%
-  mutate(period = as.Date(period)) %>%
-  filter(period > ymd("2019-01-01") | origin == "outpatient_all") %>%
-  mutate(origin = case_when(
-    origin == "outpatient_all" ~ "Unmitigated",
-    origin == "final_visit" ~ "Final visit",
-    origin == "most_severe" ~ "Most severe"
-  ))
+df_mitigation_constructed_no_threshold_plot <- create_mitigation_df(
+  df_default = df_outpatient_constructed_no_threshold_default,
+  df_most_severe = df_outpatient_constructed_no_threshold_most_severe,
+  df_last_visit_only = df_outpatient_constructed_no_threshold_last_visit_only
+)
 
 mitigation_constructed_no_threshold_plot <- save_mitigation_strategy_plot(df_mitigation_constructed_no_threshold_plot, "mitigation_constructed_no_threshold")
 
@@ -122,18 +115,11 @@ log_time()
 log_time()
 source(here("src", "individual_unique_diagnoses_functions.r"))
 
-df_mitigation_constructed_1m_threshold_plot <- df_outpatient_constructed_1m_threshold_default %>%
-  filter(period > ymd("2012-12-31")) %>%
-  mutate(origin = "outpatient_all") %>%
-  bind_rows(mutate(df_outpatient_constructed_1m_threshold_most_severe, origin = "most_severe")) %>%
-  bind_rows(mutate(df_outpatient_constructed_1m_threshold_last_visit_only, origin = "final_visit")) %>%
-  mutate(period = as.Date(period)) %>%
-  filter(period > ymd("2019-01-01") | origin == "outpatient_all") %>%
-  mutate(origin = case_when(
-    origin == "outpatient_all" ~ "Unmitigated",
-    origin == "final_visit" ~ "Final visit",
-    origin == "most_severe" ~ "Most severe"
-  ))
+df_mitigation_constructed_1m_threshold_plot <- create_mitigation_df(
+  df_default = df_outpatient_constructed_1m_threshold_default,
+  df_most_severe = df_outpatient_constructed_1m_threshold_most_severe,
+  df_last_visit_only = df_outpatient_constructed_1m_threshold_last_visit_only
+)
 
 mitigation_constructed_1m_threshold_plot <- save_mitigation_strategy_plot(df_mitigation_constructed_1m_threshold_plot, "mitigation_constructed_1m_threshold")
 
@@ -177,18 +163,11 @@ log_time()
 log_time()
 source(here("src", "individual_unique_diagnoses_functions.r"))
 
-df_mitigation_constructed_2m_threshold_plot <- df_outpatient_constructed_2m_threshold_default %>%
-  filter(period > ymd("2012-12-31")) %>%
-  mutate(origin = "outpatient_all") %>%
-  bind_rows(mutate(df_outpatient_constructed_2m_threshold_most_severe, origin = "most_severe")) %>%
-  bind_rows(mutate(df_outpatient_constructed_2m_threshold_last_visit_only, origin = "final_visit")) %>%
-  mutate(period = as.Date(period)) %>%
-  filter(period > ymd("2019-01-01") | origin == "outpatient_all") %>%
-  mutate(origin = case_when(
-    origin == "outpatient_all" ~ "Unmitigated",
-    origin == "final_visit" ~ "Final visit",
-    origin == "most_severe" ~ "Most severe"
-  ))
+df_mitigation_constructed_2m_threshold_plot <- create_mitigation_df(
+  df_default = df_outpatient_constructed_2m_threshold_default,
+  df_most_severe = df_outpatient_constructed_2m_threshold_most_severe,
+  df_last_visit_only = df_outpatient_constructed_2m_threshold_last_visit_only
+)
 
 mitigation_constructed_2m_threshold_plot <- save_mitigation_strategy_plot(df_mitigation_constructed_2m_threshold_plot, "mitigation_constructed_2m_threshold")
 
@@ -232,18 +211,11 @@ log_time()
 log_time()
 source(here("src", "individual_unique_diagnoses_functions.r"))
 
-df_mitigation_constructed_3m_threshold_plot <- df_outpatient_constructed_3m_threshold_default %>%
-  filter(period > ymd("2012-12-31")) %>%
-  mutate(origin = "outpatient_all") %>%
-  bind_rows(mutate(df_outpatient_constructed_3m_threshold_most_severe, origin = "most_severe")) %>%
-  bind_rows(mutate(df_outpatient_constructed_3m_threshold_last_visit_only, origin = "final_visit")) %>%
-  mutate(period = as.Date(period)) %>%
-  filter(period > ymd("2019-01-01") | origin == "outpatient_all") %>%
-  mutate(origin = case_when(
-    origin == "outpatient_all" ~ "Unmitigated",
-    origin == "final_visit" ~ "Final visit",
-    origin == "most_severe" ~ "Most severe"
-  ))
+df_mitigation_constructed_3m_threshold_plot <- create_mitigation_df(
+  df_default = df_outpatient_constructed_3m_threshold_default,
+  df_most_severe = df_outpatient_constructed_3m_threshold_most_severe,
+  df_last_visit_only = df_outpatient_constructed_3m_threshold_last_visit_only
+)
 
 mitigation_constructed_3m_threshold_plot <- save_mitigation_strategy_plot(df_mitigation_constructed_3m_threshold_plot, "mitigation_constructed_3m_threshold")
 
@@ -286,18 +258,11 @@ log_time()
 log_time()
 source(here("src", "individual_unique_diagnoses_functions.r"))
 
-df_mitigation_constructed_6m_threshold_plot <- df_outpatient_constructed_6m_threshold_default %>%
-  filter(period > ymd("2012-12-31")) %>%
-  mutate(origin = "outpatient_all") %>%
-  bind_rows(mutate(df_outpatient_constructed_6m_threshold_most_severe, origin = "most_severe")) %>%
-  bind_rows(mutate(df_outpatient_constructed_6m_threshold_last_visit_only, origin = "final_visit")) %>%
-  mutate(period = as.Date(period)) %>%
-  filter(period > ymd("2019-01-01") | origin == "outpatient_all") %>%
-  mutate(origin = case_when(
-    origin == "outpatient_all" ~ "Unmitigated",
-    origin == "final_visit" ~ "Final visit",
-    origin == "most_severe" ~ "Most severe"
-  ))
+df_mitigation_constructed_6m_threshold_plot <- create_mitigation_df(
+  df_default = df_outpatient_constructed_6m_threshold_default,
+  df_most_severe = df_outpatient_constructed_6m_threshold_most_severe,
+  df_last_visit_only = df_outpatient_constructed_6m_threshold_last_visit_only
+)
 
 mitigation_constructed_6m_threshold_plot <- save_mitigation_strategy_plot(df_mitigation_constructed_6m_threshold_plot, "mitigation_constructed_6m_threshold")
 
@@ -309,18 +274,11 @@ mitigation_constructed_6m_threshold_plot
 # Testing
 Mitigation
 ```{r}
-df_mitigation <- df_outpatient_constructed_default %>%
-  filter(period > ymd("2012-12-31")) %>%
-  mutate(origin = "outpatient_all") %>%
-  bind_rows(mutate(df_outpatient_constructed_most_severe, origin = "most_severe")) %>%
-  bind_rows(mutate(df_outpatient_constructed_last_visit_only, origin = "final_visit")) %>%
-  mutate(period = as.Date(period)) %>%
-  mutate(origin = case_when(
-    origin == "outpatient_all" ~ "Unmitigated",
-    origin == "final_visit" ~ "Final visit",
-    origin == "most_severe" ~ "Most severe"
-  ))
-
+df_mitigation <- create_mitigation_df(
+  df_default = df_outpatient_constructed_default,
+  df_most_severe = df_outpatient_constructed_most_severe,
+  df_last_visit_only = df_outpatient_constructed_last_visit_only
+)
 
 pacman::p_load(fable, tsibble, feasts, urca)
 

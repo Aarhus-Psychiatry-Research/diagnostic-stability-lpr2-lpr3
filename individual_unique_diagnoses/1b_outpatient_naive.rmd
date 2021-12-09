@@ -96,18 +96,11 @@ truncation_plot
 log_time()
 source(here("src", "individual_unique_diagnoses_functions.r"))
 
-df_mitigation_without_first_quarters <- df_outpatient_for_individual %>%
-  filter(period > ymd("2012-12-31")) %>%
-  mutate(origin = "outpatient_all") %>%
-  bind_rows(mutate(df_outpatient_most_severe, origin = "most_severe")) %>%
-  bind_rows(mutate(df_outpatient_last_visit_only, origin = "final_visit")) %>%
-  mutate(period = as.Date(period)) %>%
-  filter(period > ymd("2019-01-01") | origin == "outpatient_all") %>%
-  mutate(origin = case_when(
-    origin == "outpatient_all" ~ "Unmitigated",
-    origin == "final_visit" ~ "Final visit",
-    origin == "most_severe" ~ "Most severe"
-  ))
+df_mitigation_without_first_quarters <- create_mitigation_df(
+  df_default = df_outpatient_for_individual,
+  df_most_severe = df_outpatient_most_severe,
+  df_last_visit_only = df_outpatient_last_visit_only
+)
 
 mitigation_plot <- save_mitigation_strategy_plot(df_mitigation,
   filename = "mitigation_naive"
