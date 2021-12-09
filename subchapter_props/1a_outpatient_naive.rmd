@@ -11,30 +11,32 @@ source("0_setup_env.r")
 
 Reduce complexity
 ```{r}
-df_outpatient_for_subchapter <- df_raw_outpatient %>% 
-  filter(ambbesoeg == 1) %>% 
-  add_LPR23_quarter_column() %>% 
-  select(dw_ek_borger,
-         datotid_start,
-         dw_sk_lpr3forloebsansvar,
-         dw_sk_kontakt,
-         adiagnosekode,
-         ambbesoeg,
-         period,
-         shakgeografiafskode_besoeg) %>%
-  rename(clinic = shakgeografiafskode_besoeg) %>% 
-  keep_only_psych_visits() %>% 
+df_outpatient_for_subchapter <- df_raw_outpatient %>%
+  filter(ambbesoeg == 1) %>%
+  add_LPR23_quarter_column() %>%
+  select(
+    dw_ek_borger,
+    datotid_start,
+    dw_sk_lpr3forloebsansvar,
+    dw_sk_kontakt,
+    adiagnosekode,
+    ambbesoeg,
+    period,
+    shakgeografiafskode_besoeg
+  ) %>%
+  rename(clinic = shakgeografiafskode_besoeg) %>%
+  keep_only_psych_visits() %>%
   truncate_diagnosis_to_letter_and_digit()
 ```
 
 ## Naive
 ```{r}
-df_unique_in_period_outpatient <- df_outpatient_for_subchapter %>%  
-  add_column_unique_pt_in_period() 
+df_unique_in_period_outpatient <- df_outpatient_for_subchapter %>%
+  add_column_unique_pt_in_period()
 ```
 
 ```{r}
-df_unique_with_diagnosis_outpatient <- df_outpatient_for_subchapter %>% 
+df_unique_with_diagnosis_outpatient <- df_outpatient_for_subchapter %>%
   add_column_n_with_diagnosis_in_period()
 
 df_prop_diag_outpatient <- calc_prop_of_unique_patients_with_diagnosis(df_unique_in_period_outpatient, df_unique_with_diagnosis_outpatient)
@@ -45,36 +47,38 @@ log_time()
 ## Most severe
 Recode with most severe from sequence
 ```{r}
-source("../src/functions.r")
-df_unique_with_diagnosis_as_most_severe_outpatient <- df_outpatient_for_subchapter %>% 
-  recode_with_most_severe_diagnosis_for_sequence(dw_sk_kontakt, dw_sk_lpr3forloebsansvar, two_columns = TRUE) %>% 
-  add_column_n_with_diagnosis_in_period() 
+source(here("src", "functions.r"))
+df_unique_with_diagnosis_as_most_severe_outpatient <- df_outpatient_for_subchapter %>%
+  recode_with_most_severe_diagnosis_for_sequence(dw_sk_kontakt, dw_sk_lpr3forloebsansvar, two_columns = TRUE) %>%
+  add_column_n_with_diagnosis_in_period()
 ```
 
 ```{r}
-source("../src/functions.r")
-df_prop_diag_most_severe_outpatient <- calc_prop_of_unique_patients_with_diagnosis(df_unique_in_period_outpatient, 
-                                                      df_unique_with_diagnosis_as_most_severe_outpatient)
+source(here("src", "functions.r"))
+df_prop_diag_most_severe_outpatient <- calc_prop_of_unique_patients_with_diagnosis(
+  df_unique_in_period_outpatient,
+  df_unique_with_diagnosis_as_most_severe_outpatient
+)
 
 log_time()
-
 ```
 
 
 ## Final visit
 ```{r}
-source("../src/functions.r")
-df_outpatient_for_subchapter_final_visit_only <- df_outpatient_for_subchapter %>% 
+source(here("src", "functions.r"))
+df_outpatient_for_subchapter_final_visit_only <- df_outpatient_for_subchapter %>%
   recode_diagnoses_with_last_in_sequence(dw_sk_kontakt, dw_sk_lpr3forloebsansvar, two_columns = TRUE)
 
-df_unique_with_diagnosis_outpatient_final_visit_only <- df_outpatient_for_subchapter_final_visit_only %>% 
+df_unique_with_diagnosis_outpatient_final_visit_only <- df_outpatient_for_subchapter_final_visit_only %>%
   add_column_n_with_diagnosis_in_period()
 
-df_prop_diag_outpatient_final_visit_only <- calc_prop_of_unique_patients_with_diagnosis(df_unique_in_period_outpatient,
-                                                     df_unique_with_diagnosis_outpatient_final_visit_only)
+df_prop_diag_outpatient_final_visit_only <- calc_prop_of_unique_patients_with_diagnosis(
+  df_unique_in_period_outpatient,
+  df_unique_with_diagnosis_outpatient_final_visit_only
+)
 
 log_time()
-
 ```
 
 # Plotting
@@ -82,8 +86,8 @@ log_time()
 ```{r}
 
 ## Join with the receiver dataframe
-df_mitigation_naive <- mutate(df_prop_diag_outpatient, origin = "Unchanged") %>% 
-  bind_rows(mutate(df_prop_diag_most_severe_outpatient, origin = "Most severe")) %>% 
+df_mitigation_naive <- mutate(df_prop_diag_outpatient, origin = "Unchanged") %>%
+  bind_rows(mutate(df_prop_diag_most_severe_outpatient, origin = "Most severe")) %>%
   bind_rows(mutate(df_prop_diag_outpatient_final_visit_only, origin = "Final visit"))
 
 df_mitigation_naive_without_first_quarters <- df_mitigation_naive %>%
@@ -96,43 +100,41 @@ log_time()
 ## Plot
 print(getwd())
 
-source("../src/functions.r")
-source("../src/subchapter_props_functions.r")
+source(here("src", "functions.r"))
+source(here("src", "subchapter_props_functions.r"))
 
-graph_subchapter_props(df_mitigation_naive, 
-                       filename = "examine_mitigation_full_same_y_axes",
-                       date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
-                       ylabel = "Proportion of outpatients with incident main diagnosis from chapter"
-                       )
+graph_subchapter_props(df_mitigation_naive,
+  filename = "examine_mitigation_full_same_y_axes",
+  date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
+  ylabel = "Proportion of outpatients with incident main diagnosis from chapter"
+)
 
-graph_subchapter_props(df_mitigation_naive, 
-                       filename = "examine_mitigation_full_free_y_axes",
-                       date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
-                       ylabel = "Proportion of outpatients with incident main diagnosis from chapter"
-                       )
+graph_subchapter_props(df_mitigation_naive,
+  filename = "examine_mitigation_full_free_y_axes",
+  date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
+  ylabel = "Proportion of outpatients with incident main diagnosis from chapter"
+)
 
 log_time()
-
 ```
 
 ```{r}
 ## Plot
-source("../src/subchapter_props_functions.r")
+source(here("src", "subchapter_props_functions.r"))
 
-graph_subchapter_props(df_mitigation_naive_without_first_quarters, 
-                       filename = "examine_mitigation_without_first_quarters_same_y_axes",
-                       date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
-                       ylabel = "Proportion of outpatients with incident main diagnosis from chapter"
-                       )
+graph_subchapter_props(df_mitigation_naive_without_first_quarters,
+  filename = "examine_mitigation_without_first_quarters_same_y_axes",
+  date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
+  ylabel = "Proportion of outpatients with incident main diagnosis from chapter"
+)
 
-graph_subchapter_props(df_mitigation_naive_without_first_quarters, 
-                       filename = "examine_mitigation_without_first_quarters_free_y_axes",
-                       date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
-                       ylabel = "Proportion of outpatients with incident main diagnosis from chapter"
-                       )
+graph_subchapter_props(df_mitigation_naive_without_first_quarters,
+  filename = "examine_mitigation_without_first_quarters_free_y_axes",
+  date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
+  ylabel = "Proportion of outpatients with incident main diagnosis from chapter"
+)
 
 log_time()
-
 ```
 
 ## Testing
@@ -140,44 +142,49 @@ log_time()
 pacman::p_load(fable, tsibble, feasts, urca)
 
 
-df_mitigation_naive_without_first_quarters_p_values <- df_mitigation_naive_without_first_quarters %>% 
-  mutate(lpr3 = if_else(period < "2019-02-03", 0, 1),
-         period = yearquarter(period)) %>% 
-  select(prop, adiagnosekode, period, origin, lpr3) %>% 
-  as_tsibble(key = c(origin, adiagnosekode), index = period) %>% 
-  model(arima = ARIMA(prop ~ 1 + lpr3 + pdq(0,0,0) + PDQ(0,0,0))) %>% 
-  coef() %>% 
-  select(!.model) %>% 
+df_mitigation_naive_without_first_quarters_p_values <- df_mitigation_naive_without_first_quarters %>%
+  mutate(
+    lpr3 = if_else(period < "2019-02-03", 0, 1),
+    period = yearquarter(period)
+  ) %>%
+  select(prop, adiagnosekode, period, origin, lpr3) %>%
+  as_tsibble(key = c(origin, adiagnosekode), index = period) %>%
+  model(arima = ARIMA(prop ~ 1 + lpr3 + pdq(0, 0, 0) + PDQ(0, 0, 0))) %>%
+  coef() %>%
+  select(!.model) %>%
   filter(term == "lpr3")
 
-# add the needed x (period) and y (prop) values for plotting 
-df_mitigation_naive_without_first_quarters_p_values <- df_mitigation_naive_without_first_quarters %>% 
-  filter(period == max(period)) %>% 
-  select(period, prop, origin, adiagnosekode) %>% 
-  left_join(df_mitigation_naive_without_first_quarters_p_values, by=c("origin", "adiagnosekode")) %>% 
+# add the needed x (period) and y (prop) values for plotting
+df_mitigation_naive_without_first_quarters_p_values <- df_mitigation_naive_without_first_quarters %>%
+  filter(period == max(period)) %>%
+  select(period, prop, origin, adiagnosekode) %>%
+  left_join(df_mitigation_naive_without_first_quarters_p_values, by = c("origin", "adiagnosekode")) %>%
   mutate(corrected_p <- p.adjust(p.value, "fdr"),
-         significant = if_else(corrected_p < 0.05, "*", "")) 
+    significant = if_else(corrected_p < 0.05, "*", "")
+  )
 ```
 
 
 
 ```{r}
-source("../src/subchapter_props_functions.r")
+source(here("src", "subchapter_props_functions.r"))
 
 
-graph_subchapter_props(df_mitigation_naive_without_first_quarters, 
-                       filename = "examine_mitigation_without_first_quarters_same_y_axes_with_p_values",
-                       date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
-                       ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
-                       p_values = df_mitigation_naive_without_first_quarters_p_values,
-                       nudge_constant = 0.02)
+graph_subchapter_props(df_mitigation_naive_without_first_quarters,
+  filename = "examine_mitigation_without_first_quarters_same_y_axes_with_p_values",
+  date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
+  ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
+  p_values = df_mitigation_naive_without_first_quarters_p_values,
+  nudge_constant = 0.02
+)
 
 
-graph_subchapter_props(df_mitigation_naive_without_first_quarters, 
-                       filename = "examine_mitigation_without_first_quarters_free_y_axes_with_p_values",
-                       date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
-                       ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
-                       p_values = df_mitigation_naive_without_first_quarters_p_values,
-                       nudge_frac = 0.02)
+graph_subchapter_props(df_mitigation_naive_without_first_quarters,
+  filename = "examine_mitigation_without_first_quarters_free_y_axes_with_p_values",
+  date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
+  ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
+  p_values = df_mitigation_naive_without_first_quarters_p_values,
+  nudge_frac = 0.02
+)
 ```
 

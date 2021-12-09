@@ -13,15 +13,15 @@ df_naive_summarised <- df_outpatient_constructed_no_threshold_last_visit_only
 
 df_source_threshold <- df_outpatient_constructed_3m_threshold
 df_source_naive <- df_outpatient_constructed_no_threshold
-
 ```
 
 
 Are there an identical number of patients in periods?
 ```{r}
-identical(df_threshold_summarised$n, 
-          df_naive_summarised$n)
-
+identical(
+  df_threshold_summarised$n,
+  df_naive_summarised$n
+)
 ```
 
 Is the NA rate the same?
@@ -41,16 +41,16 @@ dim(df_source_naive)
 What does "NA introduced by coercion" mean when running `recode_with_most_severe_diagnosis_for_sequence`?
 
 ```{r}
-source("../src/functions.r")
+source(here("src", "functions.r"))
 
 # undebug(recode_with_most_severe_diagnosis_for_sequence)
 
-df_threshold_most_severe <- df_source_threshold %>% 
-  slice_sample(prop=0.01) %>%
-  mutate(adiagnosekode_2 = substr(adiagnosekode, 2, 2)) %>% 
+df_threshold_most_severe <- df_source_threshold %>%
+  slice_sample(prop = 0.01) %>%
+  mutate(adiagnosekode_2 = substr(adiagnosekode, 2, 2)) %>%
   recode_with_most_severe_diagnosis_for_sequence(constructed_id)
 
-df_threshold_most_severe %>% 
+df_threshold_most_severe %>%
   filter(adiagnosekode_2 == "e")
 ```
 
@@ -64,27 +64,29 @@ For some reason, about 10% of the rows don't have psychiatric diagnosis codes. T
 
 # Speed up construct_sequences
 ```{r}
-source("../src/functions.r")
+source(here("src", "functions.r"))
 
-df_outpatient_arranged <- df_outpatient_preprocessed %>% 
+df_outpatient_arranged <- df_outpatient_preprocessed %>%
   arrange(dw_ek_borger, no_threshold_constructed_id, datotid_start)
 ```
 
 ```{r}
-source("../src/functions.r")
+source(here("src", "functions.r"))
 ```
 
 
 ```{r}
-source("../src/functions.r")
+source(here("src", "functions.r"))
 
 df_for_testing <- head(df_outpatient_arranged, 103480)
 
-df_outpatient_constructed_3m_threshold <- df_for_testing %>% 
-  construct_sequences2(clinic_id_col=shakgeografiafskode_besoeg,
-                      patient_id_col=dw_ek_borger,
-                      date_col=datotid_start,
-                      threshold_months=3,
-                      verbose = TRUE)
+df_outpatient_constructed_3m_threshold <- df_for_testing %>%
+  construct_sequences2(
+    clinic_id_col = shakgeografiafskode_besoeg,
+    patient_id_col = dw_ek_borger,
+    date_col = datotid_start,
+    threshold_months = 3,
+    verbose = TRUE
+  )
 ```
 
