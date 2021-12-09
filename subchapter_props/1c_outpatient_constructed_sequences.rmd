@@ -127,7 +127,7 @@ graph_subchapter_props(df_examine_mitigation_constructed_sequences_without_first
 
 
 graph_subchapter_props(df_examine_mitigation_constructed_sequences_without_first_quarters,
-  filename = "examine_mitigation_constructed_without_first_quarters_full_same_y_axes_with_p_values",
+  filename = "examine_mitigation_constructed_without_first_quarters_full_free_y_axes_with_p_values",
   date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
   ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
   p_values = df_examine_mitigation_constructed_sequences_without_first_quarters_p_values,

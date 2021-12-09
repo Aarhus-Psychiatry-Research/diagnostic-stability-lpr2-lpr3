@@ -93,7 +93,7 @@ df_outpatient_constructed_1m_threshold <- df_outpatient_preprocessed %>%
   )
 ```
 
-## Construct ssequences
+## Construct sequences
 ```{r}
 df_outpatient_constructed_1m_threshold_default <- df_outpatient_constructed_1m_threshold %>%
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
@@ -141,7 +141,7 @@ df_outpatient_constructed_2m_threshold <- df_outpatient_preprocessed %>%
   )
 ```
 
-## Construct ssequences
+## Construct sequences
 ```{r}
 df_outpatient_constructed_2m_threshold_default <- df_outpatient_constructed_2m_threshold %>%
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
@@ -236,7 +236,7 @@ df_outpatient_constructed_6m_threshold <- df_outpatient_preprocessed %>%
   )
 ```
 
-## Construct ssequences
+## Construct sequences
 ```{r}
 df_outpatient_constructed_6m_threshold_default <- df_outpatient_constructed_6m_threshold %>%
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
@@ -271,13 +271,13 @@ mitigation_constructed_6m_threshold_plot
 
 
 
-# Testing
-Mitigation
+# Plots with P-values
+## Mitigation, no threshold
 ```{r}
 df_mitigation <- create_mitigation_df(
-  df_default = df_outpatient_constructed_default,
-  df_most_severe = df_outpatient_constructed_most_severe,
-  df_last_visit_only = df_outpatient_constructed_last_visit_only
+  df_default = df_outpatient_constructed_no_threshold_default,
+  df_most_severe = df_outpatient_constructed_no_threshold_most_severe,
+  df_last_visit_only = df_outpatient_constructed_no_threshold_last_visit_only
 )
 
 pacman::p_load(fable, tsibble, feasts, urca)
@@ -324,10 +324,8 @@ p
 ```
 
 
-
-Truncation
-
-
+# Hypothesis-testing
+## Truncation
 Hypothesis test: was there a change diagnoses during the transition?
 ```{r}
 

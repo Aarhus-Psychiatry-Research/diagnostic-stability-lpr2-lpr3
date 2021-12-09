@@ -132,7 +132,7 @@ gen_unique_diagnoses_pr_patient <- function(df, confidence_intervals = TRUE, tru
   } else {
     df <- df %>%
       group_by(period, dw_ek_borger) %>%
-      summarise(unique_diagnoses_1 = n_distinct(period, substr(adiagnosekode, 1, 3), dw_ek_borger))
+      summarise(unique_diagnoses_2 = n_distinct(period, substr(adiagnosekode, 1, 3), dw_ek_borger))
   }
 
   # Handle confidence intervals
@@ -154,11 +154,11 @@ gen_unique_diagnoses_pr_patient <- function(df, confidence_intervals = TRUE, tru
       df <- df %>%
         group_by(period) %>%
         summarise(
-          mean.ci.1 = list(mean_ci(unique_diagnoses_1)),
+          mean.ci.2 = list(mean_ci(unique_diagnoses_2)),
           n = n()
         )
 
-      truncation_levels_list <- list(1)
+      truncation_levels_list <- list(2)
     }
 
     # Unnest confidence intervals

@@ -120,14 +120,14 @@ save_mitigation_strategy_plot <- function(df, filename, p_values = NULL) {
         df,
         aes(
             x = as.Date(period),
-            y = mean_1,
+            y = mean_2,
             color = origin
         )
     ) +
         geom_linerange(
             aes(
-                ymin = lcl_1,
-                ymax = ucl_1
+                ymin = lcl_2,
+                ymax = ucl_2
             ),
             alpha = 0.1,
         ) +
@@ -177,7 +177,7 @@ save_mitigation_strategy_plot <- function(df, filename, p_values = NULL) {
             date_labels = "%Y",
             limits = c(ymd("2013-01-01"), ymd("2021-07-01"))
         ) +
-        scale_y_continuous(limits = c(1, 1.05))
+        scale_y_continuous(limits = c(1, 1.07))
 
     if (!is.null(p_values)) {
         gg <- gg +
