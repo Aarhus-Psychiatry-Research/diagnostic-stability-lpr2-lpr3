@@ -17,7 +17,7 @@ df_constructed_outpatient_series <- df_outpatient_for_subchapter %>%
     clinic_id_col = clinic,
     patient_id_col = dw_ek_borger,
     date_col = datotid_start,
-    threshold_months = 3,
+    threshold_months = 0,
     verbose = TRUE
   )
 ```

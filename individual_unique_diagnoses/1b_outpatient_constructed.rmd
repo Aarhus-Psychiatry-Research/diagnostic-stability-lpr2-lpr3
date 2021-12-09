@@ -285,8 +285,9 @@ pacman::p_load(fable, tsibble, feasts, urca)
 # Binary indicator for date in LPR2/LPR3
 df_mitigation <- df_mitigation %>%
   mutate(lpr3 = if_else(period < "2019-02-03", 0, 1))
+```
 
-
+```{r}
 # What to report?
 # pdq(0,0,0) = linear model / t.test (no detrending)
 # pdq(0,1,0) = liear model with differencing
@@ -304,8 +305,9 @@ df_mitigation_p_values <- df_mitigation %>%
     corrected_p = p.adjust(p.value, "fdr"),
     significant = if_else(corrected_p < 0.05, "*", "")
   )
+```
 
-
+```{r}
 df_mitigation_p_values <- df_mitigation %>%
   filter(period == max(period)) %>%
   select(period, mean_2, origin) %>%

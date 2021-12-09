@@ -99,7 +99,10 @@ graph_subchapter_props <- function(df,
             # nudge prop a fraction of the original size for free axes
             p_values <- p_values %>%
                 group_by(adiagnosekode) %>%
-                mutate(prop = nudge_min_and_max_values(prop, significant, nudge_frac = nudge_frac))
+                mutate(prop = if_else(origin != "Unchanged",
+                                        nudge_min_and_max_values(prop, significant, nudge_frac = nudge_frac),
+                                        nudge_min_and_max_values(prop, significant, nudge_frac = nudge_frac * 1.5)
+                                    ))
 
             base_plot <- base_plot +
                 geom_text(
@@ -122,7 +125,11 @@ graph_subchapter_props <- function(df,
             # nudge prop a constant for same axes
             p_values <- p_values %>%
                 group_by(adiagnosekode) %>%
-                mutate(prop = nudge_min_and_max_values(prop, significant, nudge_constant = nudge_constant))
+                mutate(prop = if_else(origin != "Unchanged",
+                                        nudge_min_and_max_values(prop, significant, nudge_constant = nudge_constant),
+                                        nudge_min_and_max_values(prop, significant, nudge_constant = nudge_constant * 1.5)
+                                    )
+                )
 
             base_plot <- base_plot +
                 geom_text(
