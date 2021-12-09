@@ -16,27 +16,28 @@ source(here("src", "functions.r"))
 # Data wrangling #
 ##################
 ```{r}
-df_raw <- get_fct("FOR_besoeg_fysiske_fremmoeder") %>% 
+df_raw <- get_fct("FOR_besoeg_fysiske_fremmoeder") %>%
   clean_sql_import()
 
-df <- df_raw %>% 
-  keep_only_psych_visits() %>% 
-  select("dw_ek_borger", 
-               "datotid_start", 
-               "dw_sk_lpr3forloebsansvar", 
-               "adiagnosekode") %>% 
-  mutate(adiagnosekode = substring(adiagnosekode, 1, 2)) 
+df <- df_raw %>%
+  keep_only_psych_visits() %>%
+  select(
+    "dw_ek_borger",
+    "datotid_start",
+    "dw_sk_lpr3forloebsansvar",
+    "adiagnosekode"
+  ) %>%
+  mutate(adiagnosekode = substring(adiagnosekode, 1, 2))
 
 log_time()
-
 ```
 
 ```{r}
-df_with_contact_counts <- df %>% 
-  group_by(dw_sk_lpr3forloebsansvar) %>% 
-  arrange(datotid_start, .by_group=T) %>% 
-  mutate(contact_nr = row_number()) %>% 
-  group_by(dw_sk_lpr3forloebsansvar) %>% 
+df_with_contact_counts <- df %>%
+  group_by(dw_sk_lpr3forloebsansvar) %>%
+  arrange(datotid_start, .by_group = T) %>%
+  mutate(contact_nr = row_number()) %>%
+  group_by(dw_sk_lpr3forloebsansvar) %>%
   mutate(total_contacts = max(contact_nr))
 
 log_time()
@@ -48,11 +49,11 @@ log_time()
 
 ```{r}
 # Changes over n_visits
-df_one_row_per_connected_series <- df_with_contact_counts %>% 
+df_one_row_per_connected_series <- df_with_contact_counts %>%
   # filter(total_contacts > 1) %>% # Want to also visualise contacts that aren't part of a connected series
-  group_by(dw_sk_lpr3forloebsansvar) %>% 
-  mutate(first_diagnosis=str_c(adiagnosekode)) %>% 
-  mutate(last_diagnosis=str_c(last(adiagnosekode))) %>% 
+  group_by(dw_sk_lpr3forloebsansvar) %>%
+  mutate(first_diagnosis = str_c(adiagnosekode)) %>%
+  mutate(last_diagnosis = str_c(last(adiagnosekode))) %>%
   filter(contact_nr == 1)
 
 log_time()
@@ -61,21 +62,21 @@ log_time()
 
 ```{r}
 df_alluvial_final <- df_one_row_per_connected_series %>%
-  filter(substr(first_diagnosis, 1, 1) == "Z" | substr(first_diagnosis, 1, 1) == "F") %>% 
-  mutate(first_diagnosis=ifelse(substr(first_diagnosis, 1, 1) == "Z", "ZX", first_diagnosis)) %>%
-  mutate(last_diagnosis=ifelse(substr(last_diagnosis, 1, 1) == "Z", "ZX", last_diagnosis)) %>%
-  mutate(diagnosis_changed = ifelse(first_diagnosis == last_diagnosis, 0, 1)) %>% 
-  filter(substr(last_diagnosis, 1, 1) == "Z" | substr(last_diagnosis, 1, 1) == "F") %>% 
-  filter(first_diagnosis != "ZX") %>% 
+  filter(substr(first_diagnosis, 1, 1) == "Z" | substr(first_diagnosis, 1, 1) == "F") %>%
+  mutate(first_diagnosis = ifelse(substr(first_diagnosis, 1, 1) == "Z", "ZX", first_diagnosis)) %>%
+  mutate(last_diagnosis = ifelse(substr(last_diagnosis, 1, 1) == "Z", "ZX", last_diagnosis)) %>%
+  mutate(diagnosis_changed = ifelse(first_diagnosis == last_diagnosis, 0, 1)) %>%
+  filter(substr(last_diagnosis, 1, 1) == "Z" | substr(last_diagnosis, 1, 1) == "F") %>%
+  filter(first_diagnosis != "ZX") %>%
   filter(last_diagnosis != "ZX")
-  
+
 log_time()
 ```
 
 ```{r}
-allu_df_summarized <- df_alluvial_final %>% 
-  group_by(first_diagnosis, last_diagnosis) %>% 
-  summarize(n = n()) %>% 
+allu_df_summarized <- df_alluvial_final %>%
+  group_by(first_diagnosis, last_diagnosis) %>%
+  summarize(n = n()) %>%
   filter(n > 5)
 
 log_time()
@@ -93,20 +94,19 @@ log_time()
 first_diagnosis_table <- gen_first_diagnosis_table(df_alluvial_final)
 
 last_diagnosis_table <- gen_last_diagnosis_table(df_alluvial_final)
-
 ```
 
 ```{r}
 library("kableExtra")
 
-first_diagnosis_table %>% 
-  kbl() %>% 
+first_diagnosis_table %>%
+  kbl() %>%
   kable_classic_2(full_width = F)
 ```
 ```{r}
 library("kableExtra")
 
-last_diagnosis_table %>% 
-  kbl() %>% 
+last_diagnosis_table %>%
+  kbl() %>%
   kable_classic_2(full_width = F)
 ```

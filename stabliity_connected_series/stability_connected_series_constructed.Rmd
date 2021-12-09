@@ -13,32 +13,33 @@ source(here("src", "functions.r"))
 ```
 # General data wrangling
 ```{r}
-df_raw <- get_fct("FOR_besoeg_fysiske_fremmoeder") %>% 
+df_raw <- get_fct("FOR_besoeg_fysiske_fremmoeder") %>%
   clean_sql_import()
 ```
 
 # No threshold
 ## Data wrangling
 ```{r}
-df_constructed_no_threshold <- df_raw %>% 
-  keep_only_psych_visits() %>% 
-  mutate(adiagnosekode = substring(adiagnosekode, 1, 2)) %>% 
-  construct_sequences(clinic_id_col=shakgeografiafskode_besoeg,
-                      patient_id_col=dw_ek_borger,
-                      date_col=datotid_start,
-                      threshold_months=0,
-                      verbose = TRUE)
+df_constructed_no_threshold <- df_raw %>%
+  keep_only_psych_visits() %>%
+  mutate(adiagnosekode = substring(adiagnosekode, 1, 2)) %>%
+  construct_sequences(
+    clinic_id_col = shakgeografiafskode_besoeg,
+    patient_id_col = dw_ek_borger,
+    date_col = datotid_start,
+    threshold_months = 0,
+    verbose = TRUE
+  )
 
 log_time()
-
 ```
 
 ```{r}
-df_with_contact_counts_constructed_no_threshold <- df_constructed_no_threshold %>% 
-  group_by(constructed_id) %>% 
-  arrange(datotid_start, .by_group=T) %>% 
-  mutate(contact_nr = row_number()) %>% 
-  group_by(constructed_id) %>% 
+df_with_contact_counts_constructed_no_threshold <- df_constructed_no_threshold %>%
+  group_by(constructed_id) %>%
+  arrange(datotid_start, .by_group = T) %>%
+  mutate(contact_nr = row_number()) %>%
+  group_by(constructed_id) %>%
   mutate(total_contacts = max(contact_nr))
 
 log_time()
@@ -47,11 +48,11 @@ log_time()
 ## Plotting
 ```{r}
 # Changes over n_visits
-df_one_row_per_sequence_constructed_no_threshold <- df_with_contact_counts_constructed_no_threshold %>% 
+df_one_row_per_sequence_constructed_no_threshold <- df_with_contact_counts_constructed_no_threshold %>%
   # filter(total_contacts > 1) %>% # Want to also visualise contacts that aren't part of a connected series
-  group_by(constructed_id) %>% 
-  mutate(first_diagnosis=str_c(adiagnosekode)) %>% 
-  mutate(last_diagnosis=str_c(last(adiagnosekode))) %>% 
+  group_by(constructed_id) %>%
+  mutate(first_diagnosis = str_c(adiagnosekode)) %>%
+  mutate(last_diagnosis = str_c(last(adiagnosekode))) %>%
   filter(contact_nr == 1)
 
 log_time()
@@ -60,21 +61,21 @@ log_time()
 
 ```{r}
 df_alluvial_final_constructed_no_threshold <- df_one_row_per_sequence_constructed_no_threshold %>%
-  filter(substr(first_diagnosis, 1, 1) == "Z" | substr(first_diagnosis, 1, 1) == "F") %>% 
-  mutate(first_diagnosis=ifelse(substr(first_diagnosis, 1, 1) == "Z", "ZX", first_diagnosis)) %>%
-  mutate(last_diagnosis=ifelse(substr(last_diagnosis, 1, 1) == "Z", "ZX", last_diagnosis)) %>%
-  mutate(diagnosis_changed = ifelse(first_diagnosis == last_diagnosis, 0, 1)) %>% 
-  filter(substr(last_diagnosis, 1, 1) == "Z" | substr(last_diagnosis, 1, 1) == "F") %>% 
-  filter(first_diagnosis != "ZX") %>% 
+  filter(substr(first_diagnosis, 1, 1) == "Z" | substr(first_diagnosis, 1, 1) == "F") %>%
+  mutate(first_diagnosis = ifelse(substr(first_diagnosis, 1, 1) == "Z", "ZX", first_diagnosis)) %>%
+  mutate(last_diagnosis = ifelse(substr(last_diagnosis, 1, 1) == "Z", "ZX", last_diagnosis)) %>%
+  mutate(diagnosis_changed = ifelse(first_diagnosis == last_diagnosis, 0, 1)) %>%
+  filter(substr(last_diagnosis, 1, 1) == "Z" | substr(last_diagnosis, 1, 1) == "F") %>%
+  filter(first_diagnosis != "ZX") %>%
   filter(last_diagnosis != "ZX")
-  
+
 log_time()
 ```
 
 ```{r}
-allu_df_summarized_constructed_no_threshold <- df_alluvial_final_constructed_no_threshold %>% 
-  group_by(first_diagnosis, last_diagnosis) %>% 
-  summarize(n = n()) %>% 
+allu_df_summarized_constructed_no_threshold <- df_alluvial_final_constructed_no_threshold %>%
+  group_by(first_diagnosis, last_diagnosis) %>%
+  summarize(n = n()) %>%
   filter(n > 5)
 
 log_time()
@@ -83,8 +84,10 @@ log_time()
 ```{r}
 source(here("src", "stability_connected_series_functions.r"))
 
-save_alluvial_plot(df = allu_df_summarized_constructed_no_threshold,
-                   filename = "allu_first_last_constructed_no_threshold")
+save_alluvial_plot(
+  df = allu_df_summarized_constructed_no_threshold,
+  filename = "allu_first_last_constructed_no_threshold"
+)
 
 log_time()
 ```
@@ -93,47 +96,47 @@ log_time()
 first_diagnosis_table <- gen_first_diagnosis_table(df_alluvial_final_constructed_no_threshold)
 
 last_diagnosis_table <- gen_last_diagnosis_table(df_alluvial_final_constructed_no_threshold)
-
 ```
 
 ## Tables
 ```{r}
 library("kableExtra")
 
-first_diagnosis_table %>% 
-  kbl() %>% 
+first_diagnosis_table %>%
+  kbl() %>%
   kable_classic_2(full_width = F)
 ```
 ```{r}
 library("kableExtra")
 
-last_diagnosis_table %>% 
-  kbl() %>% 
+last_diagnosis_table %>%
+  kbl() %>%
   kable_classic_2(full_width = F)
 ```
 
 # 3m threshold
 ## Data wrangling
 ```{r}
-df_constructed_3m_threshold <- df_raw %>% 
-  keep_only_psych_visits() %>% 
-  mutate(adiagnosekode = substring(adiagnosekode, 1, 2)) %>% 
-  construct_sequences(clinic_id_col=shakgeografiafskode_besoeg,
-                      patient_id_col=dw_ek_borger,
-                      date_col=datotid_start,
-                      threshold_months=3,
-                      verbose = TRUE)
+df_constructed_3m_threshold <- df_raw %>%
+  keep_only_psych_visits() %>%
+  mutate(adiagnosekode = substring(adiagnosekode, 1, 2)) %>%
+  construct_sequences(
+    clinic_id_col = shakgeografiafskode_besoeg,
+    patient_id_col = dw_ek_borger,
+    date_col = datotid_start,
+    threshold_months = 3,
+    verbose = TRUE
+  )
 
 log_time()
-
 ```
 
 ```{r}
-df_with_contact_counts_constructed_3m_threshold <- df_constructed_3m_threshold %>% 
-  group_by(constructed_id) %>% 
-  arrange(datotid_start, .by_group=T) %>% 
-  mutate(contact_nr = row_number()) %>% 
-  group_by(constructed_id) %>% 
+df_with_contact_counts_constructed_3m_threshold <- df_constructed_3m_threshold %>%
+  group_by(constructed_id) %>%
+  arrange(datotid_start, .by_group = T) %>%
+  mutate(contact_nr = row_number()) %>%
+  group_by(constructed_id) %>%
   mutate(total_contacts = max(contact_nr))
 
 log_time()
@@ -142,11 +145,11 @@ log_time()
 ## Plotting
 ```{r}
 # Changes over n_visits
-df_one_row_per_sequence_constructed_3m_threshold <- df_with_contact_counts_constructed_3m_threshold %>% 
+df_one_row_per_sequence_constructed_3m_threshold <- df_with_contact_counts_constructed_3m_threshold %>%
   # filter(total_contacts > 1) %>% # Want to also visualise contacts that aren't part of a connected series
-  group_by(constructed_id) %>% 
-  mutate(first_diagnosis=str_c(adiagnosekode)) %>% 
-  mutate(last_diagnosis=str_c(last(adiagnosekode))) %>% 
+  group_by(constructed_id) %>%
+  mutate(first_diagnosis = str_c(adiagnosekode)) %>%
+  mutate(last_diagnosis = str_c(last(adiagnosekode))) %>%
   filter(contact_nr == 1)
 
 log_time()
@@ -155,21 +158,21 @@ log_time()
 
 ```{r}
 df_alluvial_final_constructed_3m_threshold <- df_one_row_per_sequence_constructed_3m_threshold %>%
-  filter(substr(first_diagnosis, 1, 1) == "Z" | substr(first_diagnosis, 1, 1) == "F") %>% 
-  mutate(first_diagnosis=ifelse(substr(first_diagnosis, 1, 1) == "Z", "ZX", first_diagnosis)) %>%
-  mutate(last_diagnosis=ifelse(substr(last_diagnosis, 1, 1) == "Z", "ZX", last_diagnosis)) %>%
-  mutate(diagnosis_changed = ifelse(first_diagnosis == last_diagnosis, 0, 1)) %>% 
-  filter(substr(last_diagnosis, 1, 1) == "Z" | substr(last_diagnosis, 1, 1) == "F") %>% 
-  filter(first_diagnosis != "ZX") %>% 
+  filter(substr(first_diagnosis, 1, 1) == "Z" | substr(first_diagnosis, 1, 1) == "F") %>%
+  mutate(first_diagnosis = ifelse(substr(first_diagnosis, 1, 1) == "Z", "ZX", first_diagnosis)) %>%
+  mutate(last_diagnosis = ifelse(substr(last_diagnosis, 1, 1) == "Z", "ZX", last_diagnosis)) %>%
+  mutate(diagnosis_changed = ifelse(first_diagnosis == last_diagnosis, 0, 1)) %>%
+  filter(substr(last_diagnosis, 1, 1) == "Z" | substr(last_diagnosis, 1, 1) == "F") %>%
+  filter(first_diagnosis != "ZX") %>%
   filter(last_diagnosis != "ZX")
-  
+
 log_time()
 ```
 
 ```{r}
-allu_df_summarized_constructed_3m_threshold <- df_alluvial_final_constructed_3m_threshold %>% 
-  group_by(first_diagnosis, last_diagnosis) %>% 
-  summarize(n = n()) %>% 
+allu_df_summarized_constructed_3m_threshold <- df_alluvial_final_constructed_3m_threshold %>%
+  group_by(first_diagnosis, last_diagnosis) %>%
+  summarize(n = n()) %>%
   filter(n > 5)
 
 log_time()
@@ -178,8 +181,10 @@ log_time()
 ```{r}
 source(here("src", "stability_connected_series_functions.r"))
 
-save_alluvial_plot(df = allu_df_summarized_constructed_3m_threshold,
-                   filename = "allu_first_last_constructed_3m_threshold")
+save_alluvial_plot(
+  df = allu_df_summarized_constructed_3m_threshold,
+  filename = "allu_first_last_constructed_3m_threshold"
+)
 
 log_time()
 ```
@@ -188,21 +193,20 @@ log_time()
 first_diagnosis_table <- gen_first_diagnosis_table(df_alluvial_final_constructed_3m_threshold)
 
 last_diagnosis_table <- gen_last_diagnosis_table(df_alluvial_final_constructed_3m_threshold)
-
 ```
 
 ## Tables
 ```{r}
 library("kableExtra")
 
-first_diagnosis_table %>% 
-  kbl() %>% 
+first_diagnosis_table %>%
+  kbl() %>%
   kable_classic_2(full_width = F)
 ```
 ```{r}
 library("kableExtra")
 
-last_diagnosis_table %>% 
-  kbl() %>% 
+last_diagnosis_table %>%
+  kbl() %>%
   kable_classic_2(full_width = F)
 ```
