@@ -189,7 +189,7 @@ df_outpatient_constructed_3m_threshold <- df_outpatient_preprocessed %>%
   )
 ```
 
-## Construct ssequences
+## Construct sequences
 ```{r}
 df_outpatient_constructed_3m_threshold_default <- df_outpatient_constructed_3m_threshold %>%
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
