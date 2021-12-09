@@ -9,64 +9,76 @@ editor_options:
 source("0_setup_env_unique_diagnoses.r")
 ```
 
+
+
 ## Data wrangling 
+Common base
+```{r}
+df_raw_outpatient_preprocessed <- df_raw_outpatient %>%
+  select(
+    dw_ek_borger,
+    datotid_start,
+    adiagnosekode,
+    ambbesoeg,
+    dw_sk_kontakt,
+    dw_sk_lpr3forloebsansvar
+  ) %>%
+  filter(ambbesoeg == 1) %>%
+  keep_only_psych_visits() %>%
+  add_LPR23_quarter_column() %>%
+  filter(period > ymd("2012-05-01"))
+```
+
 Base dataframes
 ```{r}
-df_outpatient_for_individual <- df_raw_outpatient %>%
-  select(dw_ek_borger, 
-         datotid_start, 
-         adiagnosekode, 
-         ambbesoeg) %>% 
-  filter(ambbesoeg == 1) %>% 
-  add_LPR23_quarter_column() %>% 
-  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE) %>% 
-  filter(period > ymd("2012-05-01")) # Remove weird periods
+source(here("src", "functions.r"))
+df_outpatient_for_individual <- df_raw_outpatient_preprocessed %>%
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = TRUE)
+```
 
-df_outpatient_most_severe <- df_raw_outpatient %>%
-  select(dw_ek_borger, 
-         datotid_start, 
-         adiagnosekode, 
-         ambbesoeg, 
-         dw_sk_lpr3forloebsansvar, 
-         dw_sk_kontakt) %>% 
-  filter(ambbesoeg == 1) %>% 
-  add_LPR23_quarter_column() %>% 
-  recode_with_most_severe_diagnosis_for_sequence(dw_sk_kontakt, dw_sk_lpr3forloebsansvar, two_columns = TRUE) %>% 
-  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE) %>% 
-  filter(period > ymd("2012-05-01")) # Remove weird periods
+```{r}
+df_outpatient_most_severe <- df_raw_outpatient_preprocessed %>%
+  recode_with_most_severe_diagnosis_for_sequence(dw_sk_kontakt, dw_sk_lpr3forloebsansvar, two_columns = TRUE) %>%
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
+```
 
-df_outpatient_last_visit_only <- df_raw_outpatient %>%
-  select(dw_ek_borger,
-         datotid_start, 
-         adiagnosekode, 
-         ambbesoeg, 
-         dw_sk_lpr3forloebsansvar,
-         dw_sk_kontakt) %>% 
-  filter(ambbesoeg == 1) %>% 
-  recode_diagnoses_with_last_in_sequence(dw_sk_kontakt, dw_sk_lpr3forloebsansvar, two_columns = TRUE) %>% 
-  add_LPR23_quarter_column() %>%
-  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE) %>% 
-  filter(period > ymd("2012-05-01")) # Remove weird periods
+```{r}
+df_outpatient_last_visit_only <- df_raw_outpatient_preprocessed %>%
+  recode_diagnoses_with_last_in_sequence(dw_sk_kontakt,
+    dw_sk_lpr3forloebsansvar,
+    two_columns = TRUE
+  ) %>%
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
+```
 
+```{r}
 log_time()
 
 ```
 
 Truncation
 ```{r}
-df_truncation <- df_outpatient_for_individual %>% 
-    filter(period > ymd("2012-12-31")) %>% 
-    pivot_longer(cols=c(mean_1, mean_2, mean_3, mean_4,
-                    lcl_1, lcl_2, lcl_3, lcl_4, 
-                    ucl_1, ucl_2, ucl_3, ucl_4),
-                names_to="unit_length") %>% 
-    separate(unit_length, into=c("unit", "truncation"), sep = "_") %>% 
-    pivot_wider(names_from=unit,
-                values_from=value) %>% 
-                mutate(truncation = case_when(truncation == 1 ~ "FX*",
-                truncation == 2 ~ "FXX*",
-                truncation == 3 ~ "FXX.X*",
-                truncation == 4 ~ "FXX.XX*"))
+df_truncation <- df_outpatient_for_individual %>%
+  filter(period > ymd("2012-12-31")) %>%
+  pivot_longer(
+    cols = c(
+      mean_1, mean_2, mean_3, mean_4,
+      lcl_1, lcl_2, lcl_3, lcl_4,
+      ucl_1, ucl_2, ucl_3, ucl_4
+    ),
+    names_to = "unit_length"
+  ) %>%
+  separate(unit_length, into = c("unit", "truncation"), sep = "_") %>%
+  pivot_wider(
+    names_from = unit,
+    values_from = value
+  ) %>%
+  mutate(truncation = case_when(
+    truncation == 1 ~ "FX*",
+    truncation == 2 ~ "FXX",
+    truncation == 3 ~ "FXX.X",
+    truncation == 4 ~ "FXX.XX"
+  ))
 ```
 
 ## Plotting
@@ -82,29 +94,26 @@ truncation_plot
 
 ```{r fig.height=5, fig.width=10}
 log_time()
-source("../src/individual_unique_diagnoses_functions.r")
+source(here("src", "individual_unique_diagnoses_functions.r"))
 
-df_mitigation_without_first_quarters <- df_outpatient_for_individual %>% 
-        filter(period > ymd("2012-12-31")) %>% 
-        mutate(origin = "outpatient_all") %>% 
-        bind_rows(mutate(df_outpatient_most_severe, origin = "most_severe")) %>% 
-        bind_rows(mutate(df_outpatient_last_visit_only, origin = "final_visit")) %>% 
-        mutate(period = as.Date(period)) %>% 
-        filter(period > ymd("2019-01-01") | origin == "outpatient_all") %>% 
-        mutate(origin = case_when(origin == "outpatient_all" ~ "Unmitigated",
-                                origin == "final_visit" ~ "Final visit",
-                                origin == "most_severe" ~ "Most severe")) 
+df_mitigation_without_first_quarters <- create_mitigation_df(
+  df_default = df_outpatient_for_individual,
+  df_most_severe = df_outpatient_most_severe,
+  df_last_visit_only = df_outpatient_last_visit_only
+)
 
-mitigation_plot <- save_mitigation_strategy_plot(df_mitigation, "examine_mitigation_individual_unique_diagnoses_by_quarter")
+mitigation_plot <- save_mitigation_strategy_plot(df_mitigation,
+  filename = "mitigation_naive"
+)
 
 mitigation_plot
 ```
 
 ```{r}
-source("../src/individual_unique_diagnoses_functions.r")
+source(here("src", "individual_unique_diagnoses_functions.r"))
 log_time()
 
-save_combined_plots(hierarchy_plot, mitigation_plot, "combined_individual_unique_diagnoses")
+save_combined_plots(truncation_plot, mitigation_plot, "combined_individual_unique_diagnoses")
 ```
 
 
@@ -115,53 +124,59 @@ move labels a bit to the right and add p value starts before the label
 # Testing
 Mitigation
 ```{r}
-df_mitigation_without_first_quarters <- df_outpatient_for_individual %>% 
-                            filter(period > ymd("2012-12-31")) %>% 
-                            mutate(origin = "outpatient_all") %>% 
-                            bind_rows(mutate(df_outpatient_most_severe, origin = "most_severe")) %>% 
-                            bind_rows(mutate(df_outpatient_last_visit_only, origin = "final_visit")) %>% 
-                            mutate(period = as.Date(period),
-                                   lpr3 = if_else(period < "2019-02-03", 0, 1))
+df_mitigation_without_first_quarters <- df_outpatient_for_individual %>%
+  filter(period > ymd("2012-12-31")) %>%
+  mutate(origin = "outpatient_all") %>%
+  bind_rows(mutate(df_outpatient_most_severe, origin = "most_severe")) %>%
+  bind_rows(mutate(df_outpatient_last_visit_only, origin = "final_visit")) %>%
+  mutate(
+    period = as.Date(period),
+    lpr3 = if_else(period < "2019-02-03", 0, 1)
+  )
 
 
 pacman::p_load(fable, tsibble, feasts, urca)
 
 
-# What to report? 
+# What to report?
 # pdq(0,0,0) = linear model / t.test (no detrending)
 # pdq(0,1,0) = liear model with differencing
 # pdq(1,1,0) = autoregressive model with differencing
-df_mitigation_without_first_quarters_p_values <- df_mitigation_without_first_quarters %>% 
+df_mitigation_without_first_quarters_p_values <- df_mitigation_without_first_quarters %>%
   mutate(period = yearquarter(period)) %>%
-  select(mean_2, period, origin, lpr3) %>% 
- # pivot_longer(cols=starts_with("mean"), names_to = "mean_n") %>% 
-  as_tsibble(key = origin, index = period) %>% 
-  model(arima = ARIMA(mean_2 ~ 1 + lpr3 + pdq(0,0,0) + PDQ(0,0,0))) %>% 
-  coef() %>% 
-  select(!.model) %>% 
+  select(mean_2, period, origin, lpr3) %>%
+  # pivot_longer(cols=starts_with("mean"), names_to = "mean_n") %>%
+  as_tsibble(key = origin, index = period) %>%
+  model(arima = ARIMA(mean_2 ~ 1 + lpr3 + pdq(0, 0, 0) + PDQ(0, 0, 0))) %>%
+  coef() %>%
+  select(!.model) %>%
   filter(term == "lpr3") %>%
-  ungroup() %>% 
-  mutate(corrected_p = p.adjust(p.value, "fdr"),
-         significant = if_else(corrected_p < 0.05, "*", "")) 
+  ungroup() %>%
+  mutate(
+    corrected_p = p.adjust(p.value, "fdr"),
+    significant = if_else(corrected_p < 0.05, "*", "")
+  )
 
 
-df_mitigation_without_first_quarters_p_values <- df_mitigation_without_first_quarters %>% 
-  filter(period == max(period)) %>% 
-  select(period, mean_2, origin) %>% 
-  left_join(df_mitigation_without_first_quarters_p_values, by="origin") %>% 
-  mutate(origin = case_when(origin == "outpatient_all" ~ "Unmitigated",
-                                origin == "final_visit" ~ "Final visit",
-                                origin == "most_severe" ~ "Most severe")) 
-
+df_mitigation_without_first_quarters_p_values <- df_mitigation_without_first_quarters %>%
+  filter(period == max(period)) %>%
+  select(period, mean_2, origin) %>%
+  left_join(df_mitigation_without_first_quarters_p_values, by = "origin") %>%
+  mutate(origin = case_when(
+    origin == "outpatient_all" ~ "Unmitigated",
+    origin == "final_visit" ~ "Final visit",
+    origin == "most_severe" ~ "Most severe"
+  ))
 ```
 
 
 ```{r}
 source(here("src", "individual_unique_diagnoses_functions.r"))
 
-p <- save_mitigation_strategy_plot(df_mitigation, 
-                              "examine_mitigation_individual_unique_diagnoses_by_quarter_p_values", 
-                              p_values=df_mitigation_without_first_quarters_p_values)
+p <- save_mitigation_strategy_plot(df_mitigation,
+  "examine_mitigation_individual_unique_diagnoses_by_quarter_p_values",
+  p_values = df_mitigation_without_first_quarters_p_values
+)
 
 p
 ```
@@ -173,39 +188,41 @@ Truncation
 ```{r}
 
 # binary indicator for date in LPR2/LPR3
-df_truncation <- df_truncation %>% 
-  mutate(lpr3 = if_else(period < "2019-02-03", 0, 1)) 
-  
+df_truncation <- df_truncation %>%
+  mutate(lpr3 = if_else(period < "2019-02-03", 0, 1))
 
-# What to report? 
+
+# What to report?
 # pdq(0,0,0) = linear model / t.test (no detrending)
 # pdq(0,1,0) = liear model with differencing
 # pdq(1,1,0) = autoregressive model with differencing
-df_truncation_p_values <- df_truncation %>% 
-  mutate(period = yearquarter(period)) %>% 
-  as_tsibble(key = truncation, index = period) %>% 
-  model(arima = ARIMA(mean ~ 1 + lpr3 + pdq(1,1,0) + PDQ(0,0,0))) %>% 
-  coef() %>% 
-  select(!.model) %>% 
+df_truncation_p_values <- df_truncation %>%
+  mutate(period = yearquarter(period)) %>%
+  as_tsibble(key = truncation, index = period) %>%
+  model(arima = ARIMA(mean ~ 1 + lpr3 + pdq(1, 1, 0) + PDQ(0, 0, 0))) %>%
+  coef() %>%
+  select(!.model) %>%
   filter(term == "lpr3") %>%
-  mutate(corrected_p = p.adjust(p.value, "fdr"),
-         significant = if_else(corrected_p < 0.05, "*", "")) 
+  mutate(
+    corrected_p = p.adjust(p.value, "fdr"),
+    significant = if_else(corrected_p < 0.05, "*", "")
+  )
 
 
-df_truncation_p_values <- df_truncation %>% 
-  mutate(period = as.Date(period)) %>% 
-  filter(period == max(period)) %>% 
-  select(period, mean, truncation) %>% 
-  left_join(df_truncation_p_values, by="truncation") 
-
+df_truncation_p_values <- df_truncation %>%
+  mutate(period = as.Date(period)) %>%
+  filter(period == max(period)) %>%
+  select(period, mean, truncation) %>%
+  left_join(df_truncation_p_values, by = "truncation")
 ```
 
 ```{r}
-source("../src/individual_unique_diagnoses_functions.r")
+source(here("src", "individual_unique_diagnoses_functions.r"))
 
-truncation_plot <- save_truncation_plot(df_truncation, 
-                                        "examine_truncation_individual_unique_diagnoses_by_quarter_p_values",
-                                        p_values = df_truncation_p_values)
+truncation_plot <- save_truncation_plot(df_truncation,
+  "examine_truncation_individual_unique_diagnoses_by_quarter_p_values",
+  p_values = df_truncation_p_values
+)
 
 truncation_plot
 ```
