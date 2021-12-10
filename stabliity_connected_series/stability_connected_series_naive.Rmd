@@ -92,8 +92,10 @@ log_time()
 
 ```{r}
 first_diagnosis_table <- gen_first_diagnosis_table(df_alluvial_final)
+write.csv(first_diagnosis_table, here("tables", "first_diagnosis.csv"))
 
 last_diagnosis_table <- gen_last_diagnosis_table(df_alluvial_final)
+write.csv(last_diagnosis_table, here("tables", "last_diagnosis.csv"))
 ```
 
 ```{r}

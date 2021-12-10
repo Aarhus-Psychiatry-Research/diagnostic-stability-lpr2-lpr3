@@ -279,19 +279,47 @@ construct_sequences <- function(df, clinic_id_col, patient_id_col, date_col, thr
   return(df)
 }
 
-create_mitigation_df <- function(df_default, df_most_severe, df_last_visit_only) {
+create_mitigation_df <- function(df_default, df_most_severe, df_last_visit_only, filter_mitigation=TRUE) {
   df_out <- df_default %>%
     filter(period > ymd("2012-12-31")) %>%
     mutate(origin = "outpatient_all") %>%
     bind_rows(mutate(df_most_severe, origin = "most_severe")) %>%
     bind_rows(mutate(df_last_visit_only, origin = "final_visit")) %>%
     mutate(period = as.Date(period)) %>%
-    filter(period > ymd("2019-01-01") | origin == "outpatient_all") %>%
     mutate(origin = case_when(
       origin == "outpatient_all" ~ "Unmitigated",
       origin == "final_visit" ~ "Final visit",
       origin == "most_severe" ~ "Most severe"
     ))
+  
+  if (isTRUE(filter_mitigation)) {
+    df_out <- df_out %>% 
+      filter(period > ymd("2019-01-01") | origin == "outpatient_all")
+  }
 
   return(df_out)
+}
+
+nudge_min_and_max_values <- function(x, label, nudge_constant = NULL, nudge_frac = NULL) {
+    if (!is.null(nudge_constant) & !is.null(nudge_frac)) {
+        stop("Set one of nudge_constant or nudge_frac")
+    }
+
+    has_content <- if_else(label == "", FALSE, TRUE)
+    if (sum(has_content) <= 1) {
+        return(x)
+    }
+
+    min_x <- min(x[has_content])
+    max_x <- max(x[has_content])
+
+    if (!is.null(nudge_frac)) {
+        x[x == min_x] <- min_x * (1 - nudge_frac)
+        x[x == max_x] <- max_x * (1 + nudge_frac)
+    }
+    if (!is.null(nudge_constant)) {
+        x[x == min_x] <- min_x - nudge_constant
+        x[x == max_x] <- max_x + nudge_constant
+    }
+    return(x)
 }

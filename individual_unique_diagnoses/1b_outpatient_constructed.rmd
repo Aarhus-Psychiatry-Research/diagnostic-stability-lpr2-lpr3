@@ -319,12 +319,27 @@ source(here("src", "individual_unique_diagnoses_functions.r"))
 
 p <- save_mitigation_strategy_plot(df_mitigation,
   "mitigation_constructed_p_values",
-  p_values = df_mitigation_p_values
+  p_values = df_mitigation_p_values,
 )
 
 p
 ```
 
+```{r}
+ggsave(here::here("figures", "individual_unique_diagnoses_analyses", "constructed_individual_unique_diagnoses_mitigation_with_p_values.png"), 
+       plot = p, 
+       width = 10,
+       height = 5,
+       dpi = 600)
+```
+
+## Combined
+```{r}
+source(here("src", "individual_unique_diagnoses_functions.r"))
+log_time()
+
+save_combined_plots(truncation_plot, p, "combined_constructed_individual_unique_diagnoses_with_p_values")
+```
 
 # Hypothesis-testing
 ## Truncation

@@ -161,27 +161,3 @@ graph_subchapter_props <- function(df,
 }
 
 # parameter for adding constant or multiplying
-
-nudge_min_and_max_values <- function(x, label, nudge_constant = NULL, nudge_frac = NULL) {
-    if (!is.null(nudge_constant) & !is.null(nudge_frac)) {
-        stop("Set one of nudge_constant or nudge_frac")
-    }
-
-    has_content <- if_else(label == "", FALSE, TRUE)
-    if (sum(has_content) <= 1) {
-        return(x)
-    }
-
-    min_x <- min(x[has_content])
-    max_x <- max(x[has_content])
-
-    if (!is.null(nudge_frac)) {
-        x[x == min_x] <- min_x * (1 - nudge_frac)
-        x[x == max_x] <- max_x * (1 + nudge_frac)
-    }
-    if (!is.null(nudge_constant)) {
-        x[x == min_x] <- min_x - nudge_constant
-        x[x == max_x] <- max_x + nudge_constant
-    }
-    return(x)
-}

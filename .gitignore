@@ -8,4 +8,5 @@ figures/
 .vscode/
 tables/
 *.html
-*csv
+*.csv
+*.zip

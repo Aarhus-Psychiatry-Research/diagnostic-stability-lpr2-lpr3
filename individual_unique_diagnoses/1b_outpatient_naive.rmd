@@ -92,15 +92,16 @@ source(here("src", "individual_unique_diagnoses_functions.r"))
 
 ###Mitigation
 ```{r}
+source(here("src", "functions.r"))
+
 df_mitigation_without_first_quarters <- create_mitigation_df(
   df_default = df_outpatient_for_individual,
   df_most_severe = df_outpatient_most_severe,
-  df_last_visit_only = df_outpatient_last_visit_only
-)
+  df_last_visit_only = df_outpatient_last_visit_only,
+  filter_mitigation = FALSE
+) %>% 
+  mutate(lpr3 = if_else(period > "2019-02-03", 1, 0))
   
-```
-
-```{r}
 pacman::p_load(fable, tsibble, feasts, urca)
 
 
@@ -122,27 +123,23 @@ df_mitigation_without_first_quarters_p_values <- df_mitigation_without_first_qua
     corrected_p = p.adjust(p.value, "fdr"),
     significant = if_else(corrected_p < 0.05, "*", "")
   )
-```
 
-```{r}
 df_mitigation_without_first_quarters_p_values <- df_mitigation_without_first_quarters %>%
-  filter(period == max(period)) %>%
-  select(period, mean_2, origin) %>%
-  left_join(df_mitigation_without_first_quarters_p_values, by = "origin") %>%
-  mutate(origin = case_when(
-    origin == "outpatient_all" ~ "Unmitigated",
-    origin == "final_visit" ~ "Final visit",
-    origin == "most_severe" ~ "Most severe"
-  ))
+   filter(period == max(period)) %>%
+   select(period, mean_2, origin) %>%
+   left_join(df_mitigation_without_first_quarters_p_values, by = "origin")
 ```
 
 
 ```{r}
 source(here("src", "individual_unique_diagnoses_functions.r"))
 
+undebug(save_mitigation_strategy_plot)
+
 p <- save_mitigation_strategy_plot(df_mitigation_without_first_quarters,
   "examine_mitigation_individual_unique_diagnoses_by_quarter_p_values",
-  p_values = df_mitigation_without_first_quarters_p_values
+  p_values = df_mitigation_without_first_quarters_p_values,
+  nudge_constant = 0.001
 )
 
 p
@@ -199,5 +196,5 @@ truncation_plot
 source(here("src", "individual_unique_diagnoses_functions.r"))
 log_time()
 
-save_combined_plots(truncation_plot, p, "combined_individual_unique_diagnoses_with_p_values")
+save_combined_plots(truncation_plot, p, "combined_naive_individual_unique_diagnoses_with_p_values")
 ```

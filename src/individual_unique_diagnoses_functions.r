@@ -113,7 +113,7 @@ save_truncation_plot <- function(df, filename, p_values = NULL) {
     return(gg)
 }
 
-save_mitigation_strategy_plot <- function(df, filename, p_values = NULL) {
+save_mitigation_strategy_plot <- function(df, filename, p_values = NULL, nudge_constant = 0) {
     plot_colors <- c("steelblue", "forestgreen", "#C93312", "#DC863B", "#E1AF00", "slateblue4")
 
     gg <- ggplot(
@@ -175,11 +175,16 @@ save_mitigation_strategy_plot <- function(df, filename, p_values = NULL) {
             breaks = seq(as.Date("2013-01-01"), as.Date("2021-07-01"), by = "12 months"),
             date_minor_breaks = "3 months",
             date_labels = "%Y",
-            limits = c(ymd("2013-01-01"), ymd("2021-07-01"))
+            limits = c(ymd("2013-01-01"), ymd("2021-09-01"))
         ) +
         scale_y_continuous(limits = c(1, 1.07))
 
     if (!is.null(p_values)) {
+        p_values <- p_values %>% 
+            mutate(mean_2 = if_else(origin == "Most severe", 
+                            mean_2 + nudge_constant, 
+                            mean_2))
+
         gg <- gg +
             geom_text(
                 data = p_values,
@@ -211,7 +216,7 @@ save_combined_plots <- function(figure1, figure2, title) {
         )
 
     ggsave(
-        paste0(individual_unique_diagnoses_figure_folder, title, ".png"),
+        paste0(here("figures", "individual_unique_diagnoses", "title", ".png")),
         plot = combined,
         width = 10,
         height = 10,
