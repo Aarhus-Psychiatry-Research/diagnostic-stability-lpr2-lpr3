@@ -279,7 +279,7 @@ construct_sequences <- function(df, clinic_id_col, patient_id_col, date_col, thr
   return(df)
 }
 
-create_mitigation_df <- function(df_default, df_most_severe, df_last_visit_only, filter_mitigation=TRUE) {
+create_mitigation_df <- function(df_default, df_most_severe, df_last_visit_only) {
   df_out <- df_default %>%
     filter(period > ymd("2012-12-31")) %>%
     mutate(origin = "outpatient_all") %>%
@@ -291,11 +291,6 @@ create_mitigation_df <- function(df_default, df_most_severe, df_last_visit_only,
       origin == "final_visit" ~ "Final visit",
       origin == "most_severe" ~ "Most severe"
     ))
-  
-  if (isTRUE(filter_mitigation)) {
-    df_out <- df_out %>% 
-      filter(period > ymd("2019-01-01") | origin == "outpatient_all")
-  }
 
   return(df_out)
 }

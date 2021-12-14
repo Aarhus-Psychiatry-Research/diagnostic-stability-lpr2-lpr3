@@ -113,8 +113,12 @@ save_truncation_plot <- function(df, filename, p_values = NULL) {
     return(gg)
 }
 
-save_mitigation_strategy_plot <- function(df, filename, p_values = NULL, nudge_constant = 0) {
+save_mitigation_strategy_plot <- function(df, filename, p_values = NULL, nudge_constant = 0, exclusive_column_for_lpr2 = NA) {
     plot_colors <- c("steelblue", "forestgreen", "#C93312", "#DC863B", "#E1AF00", "slateblue4")
+
+    if (!is.na(exclusive_column_for_lpr2)) {
+        df <- df %>% filter(period > ymd("2019-01-01") | origin == exclusive_column_for_lpr2)
+    }
 
     gg <- ggplot(
         df,

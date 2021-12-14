@@ -33,11 +33,7 @@ df_raw_outpatient_preprocessed <- df_raw_outpatient %>%
 ### Base dataframes
 ```{r}
 source(here("src", "functions.r"))
-df_outpatient_for_individual <- df_raw_outpatient_preprocessed %>%
-  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = TRUE)
-```
 
-```{r}
 df_outpatient_most_severe <- df_raw_outpatient_preprocessed %>%
   recode_with_most_severe_diagnosis_for_sequence(dw_sk_kontakt, 
                                                  dw_sk_lpr3forloebsansvar, 
@@ -53,6 +49,13 @@ df_outpatient_last_visit_only <- df_raw_outpatient_preprocessed %>%
   ) %>%
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
 ```
+
+```{r}
+df_outpatient_for_individual <- df_raw_outpatient_preprocessed %>%
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = TRUE)
+```
+
+
 
 ```{r}
 log_time()
@@ -98,8 +101,7 @@ source(here("src", "functions.r"))
 df_mitigation_without_first_quarters <- create_mitigation_df(
   df_default = df_outpatient_for_individual,
   df_most_severe = df_outpatient_most_severe,
-  df_last_visit_only = df_outpatient_last_visit_only,
-  filter_mitigation = FALSE
+  df_last_visit_only = df_outpatient_last_visit_only
 )
   
 pacman::p_load(fable, tsibble, feasts, urca)
@@ -138,7 +140,8 @@ source(here("src", "individual_unique_diagnoses_functions.r"))
 p <- save_mitigation_strategy_plot(df_mitigation_without_first_quarters,
   "examine_mitigation_individual_unique_diagnoses_by_quarter_p_values",
   p_values = df_mitigation_without_first_quarters_p_values,
-  nudge_constant = 0.001
+  nudge_constant = 0.001,
+  exclusive_column_for_lpr2 = "Unmitigated"
 )
 
 p

@@ -7,19 +7,33 @@ output: html_document
 library("bookdown")
 library("here")
 
-bookdown::render_book(input = here("rmd"), 
-                        output_format = "bookdown::gitbook",
-                        output_dir = here("books", "combined"))
-```
-
-```{r}
 render_with_settings <- function(dir) {
   bookdown::render_book(input = here("rmd", dir), 
                                       output_format = "bookdown::gitbook",
                                       output_dir = here("books", dir))
 }
+
 ```
 
+# Manual
+## Individual unique diagnoses
+```{r}
+render_with_settings("individual_unique_diagnoses")
+```
+
+```{r}
+render_with_settings("stability_connected_series")
+```
+
+```{r}
+render_with_settings("subchapter_props")
+```
+
+```{r}
+bookdown::render_book(input = here("rmd"), 
+                        output_format = "bookdown::gitbook",
+                        output_dir = here("books", "combined"))
+```
 
 ## Try out parallel processing
 ```{r setup, include=FALSE}
@@ -43,18 +57,3 @@ for (dir in dirs) {
 }
 
 ```
-
-# Manual
-## Individual unique diagnoses
-```{r}
-render_with_settings("individual_unique_diagnoses")
-```
-
-```{r}
-render_with_settings("stability_connected_series")
-```
-
-```{r}
-render_with_settings("subchapter_props")
-```
-
