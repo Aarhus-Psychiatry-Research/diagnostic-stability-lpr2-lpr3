@@ -8,13 +8,13 @@ source(here("src", "functions.r"))
 source(here("src", "individual_unique_diagnoses_functions.r"))
 source(here("src", "ggplot_defaults.r"))
 
-df_raw_outpatient <- get_fct("FOR_besoeg_fysiske_fremmoeder") %>%
+df_raw_outpatient <- get_fct("FOR_besoeg_fysiske_fremmoeder_inkl_2021") %>%
   clean_sql_import()
 
-df_raw_lpr3 <- get_fct("FOR_LPR3kontakter_psyk_somatik") %>%
+df_raw_lpr3 <- get_fct("FOR_LPR3kontakter_psyk_somatik_inkl_2021") %>%
   clean_sql_import()
 
-df_raw_lpr2_inpatient <- get_fct("FOR_indlaeggelser_psyk_somatik_LPR2") %>%
+df_raw_lpr2_inpatient <- get_fct("FOR_indlaeggelser_psyk_somatik_LPR2_inkl_2021") %>%
   clean_sql_import()
 
 log_time()

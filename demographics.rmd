@@ -22,11 +22,11 @@ source(here("src", "functions.r"))
 ```
 
 ```{r}
-df_psyk_raw <- get_fct("FOR_besoeg_fysiske_fremmoeder")
+df_psyk_raw <- get_fct("FOR_besoeg_fysiske_fremmoeder_inkl_2021")
 ```
 
 ```{r}
-df_demo_raw <- get_fct("FOR_kohorte_demografi")
+df_demo_raw <- get_fct("FOR_kohorte_demografi_inkl_2021")
 ```
 
 ```{r}

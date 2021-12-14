@@ -18,7 +18,7 @@ source(here("src", "functions.r"))
 ## Data wrangling #
 ##################
 ```{r}
-df_raw <- get_fct("FOR_besoeg_fysiske_fremmoeder") %>%
+df_raw <- get_fct("FOR_besoeg_fysiske_fremmoeder_inkl_2021") %>%
   clean_sql_import()
 
 df <- df_raw %>%
