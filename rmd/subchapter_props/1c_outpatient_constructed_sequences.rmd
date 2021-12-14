@@ -106,7 +106,7 @@ df_examine_mitigation_constructed_sequences_without_first_quarters_p_values <- d
   filter(period == max(period)) %>%
   select(period, prop, origin, adiagnosekode) %>%
   left_join(df_examine_mitigation_constructed_sequences_without_first_quarters_p_values, by = c("origin", "adiagnosekode")) %>%
-  mutate(corrected_p <- p.adjust(p.value, "fdr"),
+  mutate(corrected_p <- p.adjust(p.value, "fdr", n = 70), # 30 comparisons
     significant = if_else(corrected_p < 0.05, "*", "")
   )
 

@@ -123,7 +123,7 @@ df_mitigation_without_first_quarters_p_values <- df_mitigation_without_first_qua
   filter(term == "lpr3") %>%
   ungroup() %>%
   mutate(
-    corrected_p = p.adjust(p.value, "fdr"),
+    corrected_p = p.adjust(p.value, "fdr", n = 70), # 3 comparisons
     significant = if_else(corrected_p < 0.05, "*", "")
   )
 
@@ -172,7 +172,7 @@ df_truncation_p_values <- df_truncation %>%
   select(!.model) %>%
   filter(term == "lpr3") %>%
   mutate(
-    corrected_p = p.adjust(p.value, "fdr"),
+    corrected_p = p.adjust(p.value, "fdr", n = 70), # 4 comparisons
     significant = if_else(corrected_p < 0.05, "*", "")
   )
 
