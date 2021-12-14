@@ -109,6 +109,8 @@ df_examine_mitigation_constructed_sequences_without_first_quarters_p_values <- d
   mutate(corrected_p <- p.adjust(p.value, "fdr"),
     significant = if_else(corrected_p < 0.05, "*", "")
   )
+
+df_examine_mitigation_constructed_sequences_without_first_quarters_p_values
 ```
 
 

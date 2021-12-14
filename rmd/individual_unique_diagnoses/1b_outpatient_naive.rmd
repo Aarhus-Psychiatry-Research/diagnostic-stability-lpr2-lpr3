@@ -131,6 +131,8 @@ df_mitigation_without_first_quarters_p_values <- df_mitigation_without_first_qua
    filter(period == max(period)) %>%
    select(period, mean_2, origin) %>%
    left_join(df_mitigation_without_first_quarters_p_values, by = "origin")
+
+df_mitigation_without_first_quarters_p_values
 ```
 
 
@@ -180,6 +182,8 @@ df_truncation_p_values <- df_truncation %>%
   filter(period == max(period)) %>%
   select(period, mean, truncation) %>%
   left_join(df_truncation_p_values, by = "truncation")
+
+df_truncation_p_values
 ```
 
 ```{r}
