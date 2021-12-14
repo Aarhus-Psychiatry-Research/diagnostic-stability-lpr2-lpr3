@@ -22,9 +22,9 @@ df_outpatient_for_subchapter <- df_raw_outpatient %>%
     adiagnosekode,
     ambbesoeg,
     period,
-    shakgeografiafskode_besoeg
+    shakafskode_besoeg
   ) %>%
-  rename(clinic = shakgeografiafskode_besoeg) %>%
+  rename(clinic = shakafskode_besoeg) %>%
   keep_only_psych_visits() %>%
   truncate_diagnosis_to_letter_and_digit()
 ```

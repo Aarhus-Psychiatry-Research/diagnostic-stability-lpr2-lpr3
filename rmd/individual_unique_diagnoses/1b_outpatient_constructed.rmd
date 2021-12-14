@@ -47,7 +47,7 @@ df_outpatient_constructed_no_threshold <- df_outpatient_preprocessed %>%
   )
 ```
 
-```{r no_threshold_default}
+```{r}
 source(here("src", "functions.r"))
 ```
 

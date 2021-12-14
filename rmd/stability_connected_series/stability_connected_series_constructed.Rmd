@@ -27,7 +27,7 @@ df_constructed_no_threshold <- df_raw %>%
   keep_only_psych_visits() %>%
   mutate(adiagnosekode = substring(adiagnosekode, 1, 2)) %>%
   construct_sequences(
-    clinic_id_col = shakgeografiafskode_besoeg,
+    clinic_id_col = shakafskode_besoeg,
     patient_id_col = dw_ek_borger,
     date_col = datotid_start,
     threshold_months = 0,
