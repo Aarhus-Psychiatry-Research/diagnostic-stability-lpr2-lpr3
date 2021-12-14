@@ -63,8 +63,8 @@ df_arranged <- df_overlap %>%
   group_by(dw_ek_borger, datotid_start) %>% 
   mutate(contact_nr_on_date = row_number(),
          contacts_on_date = n()) %>% 
-  filter(contacts_on_date > 1)#  %>% 
-  # arrange(dw_ek_borger, datotid_start)
+  filter(contacts_on_date > 1)##  %>% 
+  ## arrange(dw_ek_borger, datotid_start)
   
 ```
 

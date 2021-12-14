@@ -2,9 +2,9 @@ stability_connected_series_figure_folder <- "E:/Users/adminmanber/Desktop/LPR2-L
 
 source(here("src", "ggplot_defaults.r"))
 
-save_alluvial_plot <- function(df = df, filename = "allu_first_last") {
+save_alluvial_plot <- function(df, filename = "allu_first_last") {
     base_plot <- ggplot(
-        allu_df_summarized,
+        df,
         aes(
             y = n,
             axis1 = first_diagnosis,

@@ -4,7 +4,7 @@ editor_options:
   chunk_output_type: inline
 ---
 ```{r}
-source(here("rmd", "subchapter_props", "0_setup_env.r")))
+source(here("rmd", "subchapter_props", "0_setup_env.r"))
 ```
 # Subchapter props, outpatient constructed
 ## Run 1a_outpatient_naive.rmd first!

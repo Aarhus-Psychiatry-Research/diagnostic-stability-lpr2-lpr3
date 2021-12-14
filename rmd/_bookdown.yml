@@ -1,0 +1,2 @@
+rmd_subdir: ["subchapter_props/", "individual_unique_diagnoses/", "stability_connected_series/"]
+delete_merged_file: TRUE

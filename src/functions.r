@@ -44,14 +44,14 @@ recode_with_most_severe_diagnosis_for_sequence <- function(df, id_column_1, id_c
   df_severity <- df %>%
     mutate(mildness = as.numeric(substring(adiagnosekode, 2, 2))) %>%
     mutate(mildness = ifelse(mildness == 1, 10, mildness)) %>%
-    mutate(severity = 10 - mildness) # Flip the order of the severities, making F0 the most severe (10), and F9 the least severe (1)
+    mutate(severity = 10 - mildness) ## Flip the order of the severities, making F0 the most severe (10), and F9 the least severe (1)
 
   if (two_columns == FALSE) {
     df_lpr2 <- df_severity %>%
       filter({{ id_column_1 }} != -1) %>%
       group_by({{ id_column_1 }}) %>%
       arrange(desc(severity), .by_group = TRUE) %>%
-      mutate(adiagnosekode = adiagnosekode[1]) # Get the most severe diagnosekode and recode them all as that
+      mutate(adiagnosekode = adiagnosekode[1]) ## Get the most severe diagnosekode and recode them all as that
 
     return(df_lpr2)
   } else {
@@ -59,13 +59,13 @@ recode_with_most_severe_diagnosis_for_sequence <- function(df, id_column_1, id_c
       filter({{ id_column_2 }} != -1) %>%
       group_by({{ id_column_2 }}) %>%
       arrange(desc(severity), .by_group = TRUE) %>%
-      mutate(adiagnosekode = adiagnosekode[1]) # Get the most severe diagnosekode and recode them all as that
+      mutate(adiagnosekode = adiagnosekode[1]) ## Get the most severe diagnosekode and recode them all as that
 
     df_lpr2 <- df_severity %>%
       filter({{ id_column_1 }} != -1) %>%
       group_by({{ id_column_1 }}) %>%
       arrange(desc(severity), .by_group = TRUE) %>%
-      mutate(adiagnosekode = adiagnosekode[1]) # Get the most severe diagnosekode and recode them all as that
+      mutate(adiagnosekode = adiagnosekode[1]) ## Get the most severe diagnosekode and recode them all as that
 
     return(bind_rows(
       df_lpr3,
@@ -84,7 +84,7 @@ truncate_diagnosis_to_letter_and_digit <- function(df) {
 
 
 add_LPR23_quarter_column <- function(df) {
-  twelve_days_in_seconds <- 12 * 24 * 60 * 60 # Add 12 days to make the first day of LPR2 on the edge of a quarter
+  twelve_days_in_seconds <- 12 * 24 * 60 * 60 ## Add 12 days to make the first day of LPR2 on the edge of a quarter
 
   df_out <- df %>%
     mutate(period = round_date(datotid_start + twelve_days_in_seconds, "3 months"))
@@ -117,9 +117,9 @@ recode_diagnoses_with_last_in_sequence <- function(df, id_column_1, id_column_2,
 }
 
 gen_unique_diagnoses_pr_patient <- function(df, confidence_intervals = TRUE, truncation_levels = TRUE) {
-  # Count number of unique diagnoses at different truncation intervals
+  ## Count number of unique diagnoses at different truncation intervals
 
-  # Handle main
+  ## Handle main
   if (truncation_levels == TRUE) {
     df <- df %>%
       group_by(period, dw_ek_borger) %>%
@@ -135,10 +135,10 @@ gen_unique_diagnoses_pr_patient <- function(df, confidence_intervals = TRUE, tru
       summarise(unique_diagnoses_2 = n_distinct(period, substr(adiagnosekode, 1, 3), dw_ek_borger))
   }
 
-  # Handle confidence intervals
+  ## Handle confidence intervals
   if (confidence_intervals == TRUE) {
     if (truncation_levels == TRUE) {
-      # Generate confidence intervals
+      ## Generate confidence intervals
       df <- df %>%
         group_by(period) %>%
         summarise(
@@ -161,8 +161,8 @@ gen_unique_diagnoses_pr_patient <- function(df, confidence_intervals = TRUE, tru
       truncation_levels_list <- list(2)
     }
 
-    # Unnest confidence intervals
-    for (i in truncation_levels_list) { # Expand estimates
+    ## Unnest confidence intervals
+    for (i in truncation_levels_list) { ## Expand estimates
       df <- df %>%
         unnest_wider(paste0("mean.ci.", i)) %>%
         rename(
@@ -206,7 +206,7 @@ construct_sequences <- function(df, clinic_id_col, patient_id_col, date_col, thr
     df <- df %>%
       rename(constructed_id = no_threshold_constructed_id)
   } else {
-    MONTH_IN_SECONDS <- 30 * 24 * 60 * 60 # Calculate seconds in a month to add to POSIXct.
+    MONTH_IN_SECONDS <- 30 * 24 * 60 * 60 ## Calculate seconds in a month to add to POSIXct.
     THRESHOLD_MONTHS_IN_SECONDS <- MONTH_IN_SECONDS * threshold_months
 
     df <- df %>%
@@ -215,7 +215,7 @@ construct_sequences <- function(df, clinic_id_col, patient_id_col, date_col, thr
       mutate(split_sequence_vectorised = if_else(threshold_date < datotid_start, 1, 0)) %>%
       arrange(dw_ek_borger, no_threshold_constructed_id, {{ date_col }})
 
-    current_no_threshold_id <- 0 # The ID constructed without taking thresholds into account
+    current_no_threshold_id <- 0 ## The ID constructed without taking thresholds into account
     current_threshold_sequence_id <- 0
 
     all_sequences_n <- 0
@@ -235,7 +235,7 @@ construct_sequences <- function(df, clinic_id_col, patient_id_col, date_col, thr
     for (i in 1:nrow(df)) {
       i_no_threshold_id <- df$no_threshold_constructed_id[i]
 
-      # If no_threshold ID has changed, consider to be a new sequence
+      ## If no_threshold ID has changed, consider to be a new sequence
       if (i_no_threshold_id != current_no_threshold_id) {
         prev_ids[i] <- current_no_threshold_id
 
@@ -256,11 +256,11 @@ construct_sequences <- function(df, clinic_id_col, patient_id_col, date_col, thr
         next()
       }
 
-      # Continue processing the same no_threshold sequence
+      ## Continue processing the same no_threshold sequence
       if (i_no_threshold_id == current_no_threshold_id) {
         prev_ids[i] <- current_no_threshold_id
 
-        # Handle recoding if distance is larger than threshold
+        ## Handle recoding if distance is larger than threshold
         if (isTRUE(df$split_sequence_vectorised[i] == 1)) {
           split_sequences[i] <- 1
 

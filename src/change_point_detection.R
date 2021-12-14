@@ -3,7 +3,7 @@ library(lubridate)
 library(changepoint)
 library(patchwork)
 
-### ---------- Detrending functions
+#### ---------- Detrending functions
 
 
 
@@ -36,7 +36,7 @@ spline_detrend <- function(x, n_knots){
 #' equal to the first calculaed value
 difference_detrend <- function(x, lag=1){
   x <- diff(x, lag=lag)
-#  return(x)
+##  return(x)
   return(c(rep(NA, lag), x))
 }
 
@@ -46,7 +46,7 @@ detrending_methods = list("spline" = spline_detrend,
                           "difference" = difference_detrend)
 
 
-### ---------- Change point detection
+#### ---------- Change point detection
 
 #' @title estimate_change_points
 #' @description Estimates change points using the `changepoint` library. Uses the PELT method and calculates changepoints based on both mean and variance shifts
@@ -68,12 +68,12 @@ calculate_changepoint_segments <- function(x,
                                            change_points,
                                            time
 ){
-  # add 1 as the the first change point to indicate beginning of first segment
+  ## add 1 as the the first change point to indicate beginning of first segment
   change_points <- append(change_points, 1, 0)
-  # remove first element and add the end to indicate the end of the last segment
+  ## remove first element and add the end to indicate the end of the last segment
   end_indices <- c(change_points[-1], length(time)) 
   
-  # calculate the mean value during stable segments (for plotting)
+  ## calculate the mean value during stable segments (for plotting)
   mean_value_at_change_points <- map_dbl(1:length(change_points), 
                                          function(idx) mean(
                                            x[change_points[idx]:end_indices[idx]]
@@ -94,7 +94,7 @@ calculate_changepoint_segments <- function(x,
   
 }
 
-### --------- Combined estimation and plotting
+#### --------- Combined estimation and plotting
 
 
 #' @title estimate_and_plot_changepoints
@@ -117,7 +117,7 @@ estimate_and_plot_changepoints <- function(x,
                               cp_plot_type = "line",
                               ...
                               ){
-  # remove first window_size observations as they are by definition 0 for novelty/resonance
+  ## remove first window_size observations as they are by definition 0 for novelty/resonance
   if(!is.null(window_size)){
     x <- x[-c(1:window_size)]
     time <-time[-c(1:window_size)]   
@@ -126,7 +126,7 @@ estimate_and_plot_changepoints <- function(x,
   if(isTRUE(do_detrending)){
     detrended_x <- detrending_methods[detrend_method][[1]](x, ...)
     if(detrend_method == "difference"){
-      lag <- 1 # hard coded for now to avoid going insane
+      lag <- 1 ## hard coded for now to avoid going insane
       time <- time[-c(1:lag)]
       x <- x[-c(1:lag)]
       detrended_x <- detrended_x[-c(1:lag)]
@@ -201,7 +201,7 @@ plot_detrended_ts <- function(x,
 
   detrending_methods <- if (detrending_method == "all") c("Original", "Linear", "Difference", "Spline") else c("Original", str_to_title(detrending_method))
   
-  # calculate all detrending methods
+  ## calculate all detrending methods
   detrender <- function(x, n_knots, lag){
     detrended <- tibble(Linear = linear_detrend(x),
                         Spline = spline_detrend(x, n_knots),
@@ -252,7 +252,7 @@ estimate_and_plot_changepoints_by_group <- function(
     arrange({{time_col}}) 
   
   if(!is.null(window_size)){
-    # because programming with dplyr is so much fun
+    ## because programming with dplyr is so much fun
     time <- df %>% ungroup() %>% select({{time_col}}) %>% distinct() %>% slice(-c(1:window_size)) %>% pull({{time_col}})
     #time <- unique(df[[time_col]])[-c(1:WINDOW_SIZE)]
     
@@ -270,7 +270,7 @@ estimate_and_plot_changepoints_by_group <- function(
     
     df <- df %>%
       mutate({{ts_col}} := detrend_fn({{ts_col}}, ...)) %>% 
-      # dropping the first lag points if detrend_method is difference
+      ## dropping the first lag points if detrend_method is difference
       drop_na({{ts_col}})
   }
 
@@ -281,7 +281,7 @@ estimate_and_plot_changepoints_by_group <- function(
     geom_point(size = 3, color = "#DC863B", shape = 17) + 
     geom_label(aes(label = strftime(date, "%Y-%m")), vjust=-1) + 
     coord_flip() 
-  ##### Expand axes
+  ###### Expand axes
 
   
   return(df)

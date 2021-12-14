@@ -5,6 +5,8 @@ output:
   html_document: default
 always_allow_html: yes
 ---
+# Stability connected series, constructed
+
 ```{r}
 pacman::p_load(DBI, data.table, dtply, dplyr, lubridate, ggplot2, stringr, tidyr, ggalluvial, here)
 
@@ -12,46 +14,46 @@ source("E:/Users/adminmanber/Desktop/FeasibilityMapper/utils.r")
 source(here("src", "functions.r"))
 ```
 
-##################
-# Data wrangling #
-##################
-```{r}
+## General data wrangling
+```{r get-raw}
 df_raw <- get_fct("FOR_besoeg_fysiske_fremmoeder") %>%
   clean_sql_import()
+```
 
-df <- df_raw %>%
+## No threshold
+### Data wrangling
+```{r construct-no-threshold}
+df_constructed_no_threshold <- df_raw %>%
   keep_only_psych_visits() %>%
-  select(
-    "dw_ek_borger",
-    "datotid_start",
-    "dw_sk_lpr3forloebsansvar",
-    "adiagnosekode"
-  ) %>%
-  mutate(adiagnosekode = substring(adiagnosekode, 1, 2))
+  mutate(adiagnosekode = substring(adiagnosekode, 1, 2)) %>%
+  construct_sequences(
+    clinic_id_col = shakgeografiafskode_besoeg,
+    patient_id_col = dw_ek_borger,
+    date_col = datotid_start,
+    threshold_months = 0,
+    verbose = TRUE
+  )
 
 log_time()
 ```
 
 ```{r}
-df_with_contact_counts <- df %>%
-  group_by(dw_sk_lpr3forloebsansvar) %>%
+df_with_contact_counts_constructed_no_threshold <- df_constructed_no_threshold %>%
+  group_by(constructed_id) %>%
   arrange(datotid_start, .by_group = T) %>%
   mutate(contact_nr = row_number()) %>%
-  group_by(dw_sk_lpr3forloebsansvar) %>%
+  group_by(constructed_id) %>%
   mutate(total_contacts = max(contact_nr))
 
 log_time()
 ```
 
-######################
-## Alluvial diagram ##
-######################
-
+### Plotting
 ```{r}
-# Changes over n_visits
-df_one_row_per_connected_series <- df_with_contact_counts %>%
-  # filter(total_contacts > 1) %>% # Want to also visualise contacts that aren't part of a connected series
-  group_by(dw_sk_lpr3forloebsansvar) %>%
+## Changes over n_visits
+df_one_row_per_sequence_constructed_no_threshold <- df_with_contact_counts_constructed_no_threshold %>%
+  ## filter(total_contacts > 1) %>% ## Want to also visualise contacts that aren't part of a connected series
+  group_by(constructed_id) %>%
   mutate(first_diagnosis = str_c(adiagnosekode)) %>%
   mutate(last_diagnosis = str_c(last(adiagnosekode))) %>%
   filter(contact_nr == 1)
@@ -61,7 +63,7 @@ log_time()
 
 
 ```{r}
-df_alluvial_final <- df_one_row_per_connected_series %>%
+df_alluvial_final_constructed_no_threshold <- df_one_row_per_sequence_constructed_no_threshold %>%
   filter(substr(first_diagnosis, 1, 1) == "Z" | substr(first_diagnosis, 1, 1) == "F") %>%
   mutate(first_diagnosis = ifelse(substr(first_diagnosis, 1, 1) == "Z", "ZX", first_diagnosis)) %>%
   mutate(last_diagnosis = ifelse(substr(last_diagnosis, 1, 1) == "Z", "ZX", last_diagnosis)) %>%
@@ -74,7 +76,7 @@ log_time()
 ```
 
 ```{r}
-allu_df_summarized <- df_alluvial_final %>%
+allu_df_summarized_constructed_no_threshold <- df_alluvial_final_constructed_no_threshold %>%
   group_by(first_diagnosis, last_diagnosis) %>%
   summarize(n = n()) %>%
   filter(n > 5)
@@ -85,19 +87,21 @@ log_time()
 ```{r}
 source(here("src", "stability_connected_series_functions.r"))
 
-save_alluvial_plot()
+save_alluvial_plot(
+  df = allu_df_summarized_constructed_no_threshold,
+  filename = "allu_first_last_constructed_no_threshold"
+)
 
 log_time()
 ```
 
 ```{r}
-first_diagnosis_table <- gen_first_diagnosis_table(df_alluvial_final)
-write.csv(first_diagnosis_table, here("tables", "first_diagnosis.csv"))
+first_diagnosis_table <- gen_first_diagnosis_table(df_alluvial_final_constructed_no_threshold)
 
-last_diagnosis_table <- gen_last_diagnosis_table(df_alluvial_final)
-write.csv(last_diagnosis_table, here("tables", "last_diagnosis.csv"))
+last_diagnosis_table <- gen_last_diagnosis_table(df_alluvial_final_constructed_no_threshold)
 ```
 
+### Tables
 ```{r}
 library("kableExtra")
 

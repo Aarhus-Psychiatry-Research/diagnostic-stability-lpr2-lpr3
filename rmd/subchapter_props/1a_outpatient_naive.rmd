@@ -4,10 +4,10 @@ editor_options:
   chunk_output_type: inline
 ---
 ```{r}
-source("0_setup_env.r")
+source(here("rmd", "subchapter_props", "0_setup_env.r"))
 ```
 
-# Outpatient, naive useage of kontakt and forløbsansvar
+# Suchapter props, outpatient, naive useage of kontakt and forløbsansvar
 
 Reduce complexity
 ```{r}
@@ -29,7 +29,7 @@ df_outpatient_for_subchapter <- df_raw_outpatient %>%
   truncate_diagnosis_to_letter_and_digit()
 ```
 
-## Naive
+### Naive
 ```{r}
 df_unique_in_period_outpatient <- df_outpatient_for_subchapter %>%
   add_column_unique_pt_in_period()
@@ -44,7 +44,7 @@ df_prop_diag_outpatient <- calc_prop_of_unique_patients_with_diagnosis(df_unique
 log_time()
 ```
 
-## Most severe
+### Most severe
 Recode with most severe from sequence
 ```{r}
 source(here("src", "functions.r"))
@@ -64,7 +64,7 @@ log_time()
 ```
 
 
-## Final visit
+### Final visit
 ```{r}
 source(here("src", "functions.r"))
 df_outpatient_for_subchapter_final_visit_only <- df_outpatient_for_subchapter %>%
@@ -81,11 +81,11 @@ df_prop_diag_outpatient_final_visit_only <- calc_prop_of_unique_patients_with_di
 log_time()
 ```
 
-# Plotting
-## Forloebsansvar and LPR2 kontakt
+## Plotting
+### Forloebsansvar and LPR2 kontakt
 ```{r}
 
-## Join with the receiver dataframe
+### Join with the receiver dataframe
 df_mitigation_naive <- mutate(df_prop_diag_outpatient, origin = "Unchanged") %>%
   bind_rows(mutate(df_prop_diag_most_severe_outpatient, origin = "Most severe")) %>%
   bind_rows(mutate(df_prop_diag_outpatient_final_visit_only, origin = "Final visit"))
@@ -97,7 +97,7 @@ log_time()
 ```
 
 ```{r}
-## Plot
+### Plot
 print(getwd())
 
 source(here("src", "functions.r"))
@@ -119,7 +119,7 @@ log_time()
 ```
 
 ```{r}
-## Plot
+### Plot
 source(here("src", "subchapter_props_functions.r"))
 
 graph_subchapter_props(df_mitigation_naive_without_first_quarters,
@@ -137,7 +137,7 @@ graph_subchapter_props(df_mitigation_naive_without_first_quarters,
 log_time()
 ```
 
-## Testing
+### Testing
 ```{r}
 pacman::p_load(fable, tsibble, feasts, urca)
 
@@ -154,7 +154,7 @@ df_mitigation_naive_without_first_quarters_p_values <- df_mitigation_naive_witho
   select(!.model) %>%
   filter(term == "lpr3")
 
-# add the needed x (period) and y (prop) values for plotting
+## add the needed x (period) and y (prop) values for plotting
 df_mitigation_naive_without_first_quarters_p_values <- df_mitigation_naive_without_first_quarters %>%
   filter(period == max(period)) %>%
   select(period, prop, origin, adiagnosekode) %>%

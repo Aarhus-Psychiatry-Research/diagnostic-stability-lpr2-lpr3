@@ -6,11 +6,12 @@ editor_options:
 ---
 
 ```{r}
-source("0_setup_env_unique_diagnoses.r")
+source(here("rmd", "individual_unique_diagnoses", "0_setup_env_unique_diagnoses.r"))
 ```
 
-# Data wrangling 
-## Base pre-processing
+# Individual unique diagnoses, outpatient constructed
+## Data wrangling 
+### Base pre-processing
 ```{r}
 source(here("src", "functions.r"))
 
@@ -31,8 +32,8 @@ df_outpatient_preprocessed <- df_raw_outpatient %>%
   filter(period > ymd("2012-05-01"))
 ```
 
-# No threshold
-## Construct sequences
+## No threshold
+### Construct sequences
 ```{r}
 source(here("src", "functions.r"))
 
@@ -63,7 +64,7 @@ df_outpatient_constructed_no_threshold_last_visit_only <- df_outpatient_construc
 log_time()
 ```
 
-## Plotting
+### Plotting
 ```{r fig.height=5, fig.width=10}
 log_time()
 source(here("src", "individual_unique_diagnoses_functions.r"))
@@ -79,7 +80,7 @@ mitigation_constructed_no_threshold_plot <- save_mitigation_strategy_plot(df_mit
 mitigation_constructed_no_threshold_plot
 ```
 
-# 1m threshold
+## 1m threshold
 ```{r}
 source(here("src", "functions.r"))
 
@@ -93,7 +94,7 @@ df_outpatient_constructed_1m_threshold <- df_outpatient_preprocessed %>%
   )
 ```
 
-## Construct sequences
+### Construct sequences
 ```{r}
 df_outpatient_constructed_1m_threshold_default <- df_outpatient_constructed_1m_threshold %>%
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
@@ -110,7 +111,7 @@ df_outpatient_constructed_1m_threshold_last_visit_only <- df_outpatient_construc
 log_time()
 ```
 
-## Plotting
+### Plotting
 ```{r fig.height=5, fig.width=10}
 log_time()
 source(here("src", "individual_unique_diagnoses_functions.r"))
@@ -127,7 +128,7 @@ mitigation_constructed_1m_threshold_plot
 ```
 
 
-# 2m threshold
+## 2m threshold
 ```{r}
 source(here("src", "functions.r"))
 
@@ -141,7 +142,7 @@ df_outpatient_constructed_2m_threshold <- df_outpatient_preprocessed %>%
   )
 ```
 
-## Construct sequences
+### Construct sequences
 ```{r}
 df_outpatient_constructed_2m_threshold_default <- df_outpatient_constructed_2m_threshold %>%
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
@@ -158,7 +159,7 @@ df_outpatient_constructed_2m_threshold_last_visit_only <- df_outpatient_construc
 log_time()
 ```
 
-## Plotting
+### Plotting
 ```{r fig.height=5, fig.width=10}
 log_time()
 source(here("src", "individual_unique_diagnoses_functions.r"))
@@ -175,7 +176,7 @@ mitigation_constructed_2m_threshold_plot
 ```
 
 
-# 3m threshold
+## 3m threshold
 ```{r}
 source(here("src", "functions.r"))
 
@@ -189,7 +190,7 @@ df_outpatient_constructed_3m_threshold <- df_outpatient_preprocessed %>%
   )
 ```
 
-## Construct sequences
+### Construct sequences
 ```{r}
 df_outpatient_constructed_3m_threshold_default <- df_outpatient_constructed_3m_threshold %>%
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
@@ -206,7 +207,7 @@ df_outpatient_constructed_3m_threshold_last_visit_only <- df_outpatient_construc
 log_time()
 ```
 
-## Plotting
+### Plotting
 ```{r fig.height=5, fig.width=10}
 log_time()
 source(here("src", "individual_unique_diagnoses_functions.r"))
@@ -222,7 +223,7 @@ mitigation_constructed_3m_threshold_plot <- save_mitigation_strategy_plot(df_mit
 mitigation_constructed_3m_threshold_plot
 ```
 
-# 6m threshold
+## 6m threshold
 ```{r}
 source(here("src", "functions.r"))
 
@@ -236,7 +237,7 @@ df_outpatient_constructed_6m_threshold <- df_outpatient_preprocessed %>%
   )
 ```
 
-## Construct sequences
+### Construct sequences
 ```{r}
 df_outpatient_constructed_6m_threshold_default <- df_outpatient_constructed_6m_threshold %>%
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
@@ -253,7 +254,7 @@ df_outpatient_constructed_6m_threshold_last_visit_only <- df_outpatient_construc
 log_time()
 ```
 
-## Plotting
+### Plotting
 ```{r fig.height=5, fig.width=10}
 log_time()
 source(here("src", "individual_unique_diagnoses_functions.r"))
@@ -271,27 +272,28 @@ mitigation_constructed_6m_threshold_plot
 
 
 
-# Plots with P-values
-## Mitigation, no threshold
+## Plots with P-values
+### Mitigation, no threshold
 ```{r}
 df_mitigation <- create_mitigation_df(
   df_default = df_outpatient_constructed_no_threshold_default,
   df_most_severe = df_outpatient_constructed_no_threshold_most_severe,
-  df_last_visit_only = df_outpatient_constructed_no_threshold_last_visit_only
+  df_last_visit_only = df_outpatient_constructed_no_threshold_last_visit_only,
+  filter_mitigation = FALSE
 )
 
 pacman::p_load(fable, tsibble, feasts, urca)
 
-# Binary indicator for date in LPR2/LPR3
+## Binary indicator for date in LPR2/LPR3
 df_mitigation <- df_mitigation %>%
   mutate(lpr3 = if_else(period < "2019-02-03", 0, 1))
 ```
 
 ```{r}
-# What to report?
-# pdq(0,0,0) = linear model / t.test (no detrending)
-# pdq(0,1,0) = liear model with differencing
-# pdq(1,1,0) = autoregressive model with differencing
+## What to report?
+## pdq(0,0,0) = linear model / t.test (no detrending)
+## pdq(0,1,0) = liear model with differencing
+## pdq(1,1,0) = autoregressive model with differencing
 df_mitigation_p_values <- df_mitigation %>%
   mutate(period = yearquarter(period)) %>%
   select(mean_2, period, origin, lpr3) %>%
@@ -312,6 +314,8 @@ df_mitigation_p_values <- df_mitigation %>%
   filter(period == max(period)) %>%
   select(period, mean_2, origin) %>%
   left_join(df_mitigation_p_values, by = "origin")
+
+df_mitigation_p_values
 ```
 
 ```{r}
@@ -333,28 +337,20 @@ ggsave(here::here("figures", "individual_unique_diagnoses_analyses", "constructe
        dpi = 600)
 ```
 
-## Combined
-```{r}
-source(here("src", "individual_unique_diagnoses_functions.r"))
-log_time()
-
-save_combined_plots(truncation_plot, p, "combined_constructed_individual_unique_diagnoses_with_p_values")
-```
-
-# Hypothesis-testing
-## Truncation
+## Hypothesis-testing
+### Truncation
 Hypothesis test: was there a change diagnoses during the transition?
 ```{r}
 
-# binary indicator for date in LPR2/LPR3
+## binary indicator for date in LPR2/LPR3
 df_truncation <- df_truncation %>%
   mutate(lpr3 = if_else(period < "2019-02-03", 0, 1))
 
 
-# What to report?
-# pdq(0,0,0) = linear model / t.test (no detrending)
-# pdq(0,1,0) = liear model with differencing
-# pdq(1,1,0) = autoregressive model with differencing
+## What to report?
+## pdq(0,0,0) = linear model / t.test (no detrending)
+## pdq(0,1,0) = liear model with differencing
+## pdq(1,1,0) = autoregressive model with differencing
 df_truncation %>%
   mutate(period = yearquarter(period)) %>%
   as_tsibble(key = truncation, index = period) %>%

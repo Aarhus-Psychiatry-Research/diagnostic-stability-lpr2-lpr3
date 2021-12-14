@@ -4,11 +4,11 @@ editor_options:
   chunk_output_type: inline
 ---
 ```{r}
-source("0_setup_env_subchapter.r")
+source(here("rmd", "subchapter_props", "0_setup_env.r"))
 ```
 
-# Inpatient flow
-## Inpatient: Select variables and join LPR2/LPR3 
+## Inpatient flow
+### Inpatient: Select variables and join LPR2/LPR3 
 ```{r}
 df_inpatient_lpr3 <- df_raw_lpr3 %>%
   filter(pt_type == "Indlagt") %>%
@@ -30,10 +30,10 @@ df_inpatient_for_subchapter <- df_inpatient_joined %>%
   truncate_diagnosis_to_letter_and_digit() %>%
   add_LPR23_quarter_column()
 
-# Examine date parsing
-# df_examine <- df_inpatient_for_subchapter %>%
-#   filter(datotid_start > ymd("2018-09-01")) %>%
-#   filter(datotid_start < ymd("2019-04-01"))
+## Examine date parsing
+## df_examine <- df_inpatient_for_subchapter %>%
+##   filter(datotid_start > ymd("2018-09-01")) %>%
+##   filter(datotid_start < ymd("2019-04-01"))
 
 df_unique_in_period_inpatient <- df_inpatient_for_subchapter %>%
   add_column_unique_pt_in_period()

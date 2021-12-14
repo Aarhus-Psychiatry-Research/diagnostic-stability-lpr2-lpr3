@@ -7,7 +7,7 @@ format_quarters <- function(x) {
 
     paste(year)
 
-    # paste(c("Q1","Q2","Q3","Q4")[quart], year)
+    ## paste(c("Q1","Q2","Q3","Q4")[quart], year)
 }
 
 
@@ -84,19 +84,19 @@ graph_subchapter_props <- function(df,
             x = "Quarter"
         )
 
-    # combined <- same_y_axes + free_y_axes +
-    #     plot_annotation(tag_levels = "A") +
-    #     plot_layout(ncol = 1,
-    #                 guides = "collect")
+    ## combined <- same_y_axes + free_y_axes +
+    ##     plot_annotation(tag_levels = "A") +
+    ##     plot_layout(ncol = 1,
+    ##                 guides = "collect")
 
-    # Add shared x and y-axis
-    # gt <- patchworkGrob(combined)
-    # output <- gridExtra::grid.arrange(gt,
-    #             left = "Proportion of patients with incident main diagnosis from chapter",
-    #             bottom = "Quarter")
+    ## Add shared x and y-axis
+    ## gt <- patchworkGrob(combined)
+    ## output <- gridExtra::grid.arrange(gt,
+    ##             left = "Proportion of patients with incident main diagnosis from chapter",
+    ##             bottom = "Quarter")
     if (grepl("*free*", filename)) {
         if (!is.null(p_values)) {
-            # nudge prop a fraction of the original size for free axes
+            ## nudge prop a fraction of the original size for free axes
             p_values <- p_values %>%
                 group_by(adiagnosekode) %>%
                 mutate(prop = if_else(origin != "Unchanged",
@@ -122,7 +122,7 @@ graph_subchapter_props <- function(df,
             facet_wrap(vars(adiagnosekode), nrow = 5, scales = "free_y")
     } else {
         if (!is.null(p_values)) {
-            # nudge prop a constant for same axes
+            ## nudge prop a constant for same axes
             p_values <- p_values %>%
                 group_by(adiagnosekode) %>%
                 mutate(prop = if_else(origin != "Unchanged",
@@ -160,4 +160,4 @@ graph_subchapter_props <- function(df,
     return(final_plot)
 }
 
-# parameter for adding constant or multiplying
+## parameter for adding constant or multiplying

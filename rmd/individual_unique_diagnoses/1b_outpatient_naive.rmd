@@ -6,11 +6,12 @@ editor_options:
 ---
 
 ```{r}
-source("0_setup_env_unique_diagnoses.r")
+library(here)
+source(here("rmd", "individual_unique_diagnoses", "0_setup_env_unique_diagnoses.r"))
 ```
 
 
-
+# Individual unique diagnoses, outpatient naive
 ## Data wrangling 
 Common base
 ```{r}
@@ -29,7 +30,7 @@ df_raw_outpatient_preprocessed <- df_raw_outpatient %>%
   filter(period > ymd("2012-05-01"))
 ```
 
-Base dataframes
+### Base dataframes
 ```{r}
 source(here("src", "functions.r"))
 df_outpatient_for_individual <- df_raw_outpatient_preprocessed %>%
@@ -58,7 +59,7 @@ log_time()
 
 ```
 
-Truncation
+## Truncation
 ```{r}
 df_truncation <- df_outpatient_for_individual %>%
   filter(period > ymd("2012-12-31")) %>%
@@ -90,7 +91,7 @@ source(here("src", "ggplot_defaults.r"))
 source(here("src", "individual_unique_diagnoses_functions.r"))
 ```
 
-###Mitigation
+### Mitigation
 ```{r}
 source(here("src", "functions.r"))
 
@@ -99,20 +100,20 @@ df_mitigation_without_first_quarters <- create_mitigation_df(
   df_most_severe = df_outpatient_most_severe,
   df_last_visit_only = df_outpatient_last_visit_only,
   filter_mitigation = FALSE
-) %>% 
-  mutate(lpr3 = if_else(period > "2019-02-03", 1, 0))
+)
   
 pacman::p_load(fable, tsibble, feasts, urca)
 
 
-# What to report?
-# pdq(0,0,0) = linear model / t.test (no detrending)
-# pdq(0,1,0) = liear model with differencing
-# pdq(1,1,0) = autoregressive model with differencing
+## What to report?
+## pdq(0,0,0) = linear model / t.test (no detrending)
+## pdq(0,1,0) = liear model with differencing
+## pdq(1,1,0) = autoregressive model with differencing
 df_mitigation_without_first_quarters_p_values <- df_mitigation_without_first_quarters %>%
+  mutate(lpr3 = if_else(period < "2019-02-03", 0, 1)) %>% 
   mutate(period = yearquarter(period)) %>%
   select(mean_2, period, origin, lpr3) %>%
-  # pivot_longer(cols=starts_with("mean"), names_to = "mean_n") %>%
+  ## pivot_longer(cols=starts_with("mean"), names_to = "mean_n") %>%
   as_tsibble(key = origin, index = period) %>%
   model(arima = ARIMA(mean_2 ~ 1 + lpr3 + pdq(0, 0, 0) + PDQ(0, 0, 0))) %>%
   coef() %>%
@@ -134,8 +135,6 @@ df_mitigation_without_first_quarters_p_values <- df_mitigation_without_first_qua
 ```{r}
 source(here("src", "individual_unique_diagnoses_functions.r"))
 
-undebug(save_mitigation_strategy_plot)
-
 p <- save_mitigation_strategy_plot(df_mitigation_without_first_quarters,
   "examine_mitigation_individual_unique_diagnoses_by_quarter_p_values",
   p_values = df_mitigation_without_first_quarters_p_values,
@@ -151,15 +150,15 @@ p
 ### Truncation
 ```{r}
 
-# binary indicator for date in LPR2/LPR3
+## binary indicator for date in LPR2/LPR3
 df_truncation <- df_truncation %>%
   mutate(lpr3 = if_else(period < "2019-02-03", 0, 1))
 
 
-# What to report?
-# pdq(0,0,0) = linear model / t.test (no detrending)
-# pdq(0,1,0) = liear model with differencing
-# pdq(1,1,0) = autoregressive model with differencing
+## What to report?
+## pdq(0,0,0) = linear model / t.test (no detrending)
+## pdq(0,1,0) = liear model with differencing
+## pdq(1,1,0) = autoregressive model with differencing
 df_truncation_p_values <- df_truncation %>%
   mutate(period = yearquarter(period)) %>%
   as_tsibble(key = truncation, index = period) %>%
@@ -196,5 +195,7 @@ truncation_plot
 source(here("src", "individual_unique_diagnoses_functions.r"))
 log_time()
 
-save_combined_plots(truncation_plot, p, "combined_naive_individual_unique_diagnoses_with_p_values")
+combined <- save_combined_plots(truncation_plot, p, "combined_naive_individual_unique_diagnoses_with_p_values")
+
+combined
 ```

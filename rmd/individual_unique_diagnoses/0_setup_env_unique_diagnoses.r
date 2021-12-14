@@ -1,4 +1,4 @@
-# Setup environment
+## Setup environment
 pacman::p_load(DBI, data.table, dtplyr, lubridate, ggplot2, here, stringr, tidyr, tidyverse, qwraps2, xlsx, zoo)
 library(dplyr, warn.conflicts = FALSE)
 options(lubridate.fasttime = TRUE)

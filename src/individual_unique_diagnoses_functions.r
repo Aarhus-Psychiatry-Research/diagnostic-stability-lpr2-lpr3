@@ -216,7 +216,7 @@ save_combined_plots <- function(figure1, figure2, title) {
         )
 
     ggsave(
-        paste0(here("figures", "individual_unique_diagnoses", "title", ".png")),
+        paste0(here("figures", "individual_unique_diagnoses"), title, ".png"),
         plot = combined,
         width = 10,
         height = 10,

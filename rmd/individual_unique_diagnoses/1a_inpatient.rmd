@@ -5,11 +5,14 @@ editor_options:
   chunk_output_type: inline
 ---
 
+# Individual unique diagnoses, inpatient
+
 ```{r}
-source("0_setup_env_unique_diagnoses.rmd")
+library(here)
+source(here("rmd", "individual_unique_diagnoses", "0_setup_env_unique_diagnoses.r"))
 ```
 
-## Select variables and join LPR2/LPR3 for inpatient
+### Select variables and join LPR2/LPR3 for inpatient
 ```{r}
 df_inpatient_lpr3 <- df_raw_lpr3 %>%
   filter(pt_type == "Indlagt") %>% 
