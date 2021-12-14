@@ -16,7 +16,7 @@ source(here("rmd", "individual_unique_diagnoses", "0_setup_env_unique_diagnoses.
 source(here("src", "functions.r"))
 
 df_outpatient_preprocessed <- df_raw_outpatient %>%
-  mutate(no_threshold_constructed_id = paste0(dw_ek_borger, shakgeografiafskode_besoeg)) %>%
+  mutate(no_threshold_constructed_id = paste0(dw_ek_borger, shakafskode_besoeg)) %>%
   keep_only_psych_visits() %>%
   select(
     dw_ek_borger,
@@ -25,10 +25,11 @@ df_outpatient_preprocessed <- df_raw_outpatient %>%
     ambbesoeg,
     dw_sk_lpr3forloebsansvar,
     dw_sk_kontakt,
-    shakgeografiafskode_besoeg,
+    shakafskode_besoeg,
     no_threshold_constructed_id
   ) %>%
   add_LPR23_quarter_column() %>%
+  filter(period < "2022-01-01") %>%
   filter(period > ymd("2012-05-01"))
 ```
 
@@ -39,7 +40,7 @@ source(here("src", "functions.r"))
 
 df_outpatient_constructed_no_threshold <- df_outpatient_preprocessed %>%
   construct_sequences(
-    clinic_id_col = shakgeografiafskode_besoeg,
+    clinic_id_col = shakafskode_besoeg,
     patient_id_col = dw_ek_borger,
     date_col = datotid_start,
     threshold_months = 0,

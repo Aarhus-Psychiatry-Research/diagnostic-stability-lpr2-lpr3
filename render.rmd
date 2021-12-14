@@ -15,6 +15,19 @@ render_with_settings <- function(dir) {
 
 ```
 
+# Manually add to future
+```{r}
+future(render_with_settings("individual_unique_diagnoses"))
+```
+
+```{r}
+future(render_with_settings("stability_connected_series"))
+```
+
+```{r}
+future(render_with_settings("subchapter_props"))
+```
+
 # Manual
 ## Individual unique diagnoses
 ```{r}
@@ -57,3 +70,20 @@ for (dir in dirs) {
 }
 
 ```
+
+```{r}
+library("knitr")
+files = c("stability_connected_series/stability_connected_series_constructed.rmd",
+          "stability_connected_series/stability_connected_series_naive.rmd")
+
+setwd(here("knitted"))
+
+for (rel_path in files) {
+  knit(
+    text = paste0(here("rmd"), rel_path)
+  )
+}
+
+```
+
+

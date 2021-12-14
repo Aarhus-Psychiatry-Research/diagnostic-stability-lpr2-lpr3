@@ -11,6 +11,7 @@ source(here("rmd", "subchapter_props", "0_setup_env.r"))
 ### Construct sequences
 ```{r}
 source(here::here("src", "functions.r"))
+
 df_constructed_outpatient_series <- df_outpatient_for_subchapter %>%
   keep_only_psych_visits() %>%
   construct_sequences(
@@ -21,6 +22,18 @@ df_constructed_outpatient_series <- df_outpatient_for_subchapter %>%
     verbose = TRUE
   )
 ```
+
+#### Default 
+```{r}
+df_n_with_diag_in_period_constructed_default <- df_constructed_outpatient_series %>%
+  add_column_n_with_diagnosis_in_period()
+
+df_prop_diag_constructed_sequence_default <- calc_prop_of_unique_patients_with_diagnosis(
+  df_unique_in_period_outpatient,
+  df_n_with_diag_in_period_constructed_default
+)
+```
+
 
 #### Final visit
 ```{r}
@@ -53,7 +66,7 @@ df_prop_diag_constructed_sequence_most_severe_diag <- calc_prop_of_unique_patien
 ```{r}
 
 ### Join with the receiver dataframe
-df_examine_mitigation_constructed_sequences <- mutate(df_prop_diag_constructed_sequence_most_severe_diag, origin = "Unchanged") %>%
+df_examine_mitigation_constructed_sequences <- mutate(df_prop_diag_constructed_sequence_default, origin = "Unchanged") %>%
   bind_rows(mutate(df_prop_diag_constructed_sequence_most_severe_diag, origin = "Most severe")) %>%
   bind_rows(mutate(df_prop_diag_constructed_sequence_final_visit_only, origin = "Final visit"))
 
@@ -129,14 +142,13 @@ graph_subchapter_props(df_examine_mitigation_constructed_sequences_without_first
   nudge_constant = 0.02,
   tag = "A"
 )
-# 
-# 
-# graph_subchapter_props(df_examine_mitigation_constructed_sequences_without_first_quarters,
-#   filename = "examine_mitigation_constructed_without_first_quarters_full_free_y_axes_with_p_values",
-#   date_range = c(ymd("2013-01-01"), ymd("2022-10-01")),
-#   ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
-#   p_values = df_examine_mitigation_constructed_sequences_without_first_quarters_p_values,
-#   nudge_frac = 0.02,
-#   tag = "B"
-# )
+
+graph_subchapter_props(df_examine_mitigation_constructed_sequences_without_first_quarters,
+  filename = "examine_mitigation_constructed_without_first_quarters_full_free_y_axes_with_p_values",
+  date_range = c(ymd("2013-01-01"), ymd("2022-10-01")),
+  ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
+  p_values = df_examine_mitigation_constructed_sequences_without_first_quarters_p_values,
+  nudge_frac = 0.02,
+  tag = "B"
+)
 ```

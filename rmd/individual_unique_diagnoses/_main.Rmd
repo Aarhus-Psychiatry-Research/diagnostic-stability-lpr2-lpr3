@@ -35,7 +35,8 @@ log_time()
 
 ```{r}
 df_inpatient_for_individual <- df_inpatient_joined %>% 
-  add_LPR23_quarter_column() %>% 
+  add_LPR23_quarter_column() %>%
+  filter(period < "2022-01-01") %>% 
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE)
 ```
 
@@ -59,7 +60,7 @@ source(here("rmd", "individual_unique_diagnoses", "0_setup_env_unique_diagnoses.
 source(here("src", "functions.r"))
 
 df_outpatient_preprocessed <- df_raw_outpatient %>%
-  mutate(no_threshold_constructed_id = paste0(dw_ek_borger, shakgeografiafskode_besoeg)) %>%
+  mutate(no_threshold_constructed_id = paste0(dw_ek_borger, shakafskode_besoeg)) %>%
   keep_only_psych_visits() %>%
   select(
     dw_ek_borger,
@@ -68,10 +69,11 @@ df_outpatient_preprocessed <- df_raw_outpatient %>%
     ambbesoeg,
     dw_sk_lpr3forloebsansvar,
     dw_sk_kontakt,
-    shakgeografiafskode_besoeg,
+    shakafskode_besoeg,
     no_threshold_constructed_id
   ) %>%
   add_LPR23_quarter_column() %>%
+  filter(period < "2022-01-01") %>%
   filter(period > ymd("2012-05-01"))
 ```
 
@@ -82,7 +84,7 @@ source(here("src", "functions.r"))
 
 df_outpatient_constructed_no_threshold <- df_outpatient_preprocessed %>%
   construct_sequences(
-    clinic_id_col = shakgeografiafskode_besoeg,
+    clinic_id_col = shakafskode_besoeg,
     patient_id_col = dw_ek_borger,
     date_col = datotid_start,
     threshold_months = 0,
@@ -230,6 +232,7 @@ df_raw_outpatient_preprocessed <- df_raw_outpatient %>%
   filter(ambbesoeg == 1) %>%
   keep_only_psych_visits() %>%
   add_LPR23_quarter_column() %>%
+  filter(period < "2022-01-01") %>%
   filter(period > ymd("2012-05-01"))
 ```
 
@@ -420,10 +423,32 @@ editor_options:
 ---
 
 ## Do we lose visits when using thresholds?
+```{r}
+source(here("src", "functions.r"))
+
+df_outpatient_constructed_3m_threshold <- df_outpatient_preprocessed %>%
+  construct_sequences(
+    clinic_id_col = shakgeografiafskode_besoeg,
+    patient_id_col = dw_ek_borger,
+    date_col = datotid_start,
+    threshold_months = 3,
+    verbose = TRUE
+  )
+```
 
 ```{r}
-df_threshold_summarised <- df_outpatient_constructed_3m_threshold_last_visit_only
-df_naive_summarised <- df_outpatient_constructed_no_threshold_last_visit_only
+source(here("src", "functions.r"))
+```
+
+```{r}
+df_outpatient_constructed_3m_threshold_default <- df_outpatient_constructed_3m_threshold %>%
+  gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
+```
+
+
+```{r}
+df_threshold_summarised <- df_outpatient_constructed_3m_threshold_default
+df_naive_summarised <- df_outpatient_constructed_no_threshold_default
 
 df_source_threshold <- df_outpatient_constructed_3m_threshold
 df_source_naive <- df_outpatient_constructed_no_threshold

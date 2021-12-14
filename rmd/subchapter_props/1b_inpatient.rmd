@@ -28,7 +28,8 @@ log_time()
 df_inpatient_for_subchapter <- df_inpatient_joined %>%
   keep_only_psych_visits() %>%
   truncate_diagnosis_to_letter_and_digit() %>%
-  add_LPR23_quarter_column()
+  add_LPR23_quarter_column() %>%
+  filter(period < "2022-01-01")
 
 ## Examine date parsing
 ## df_examine <- df_inpatient_for_subchapter %>%

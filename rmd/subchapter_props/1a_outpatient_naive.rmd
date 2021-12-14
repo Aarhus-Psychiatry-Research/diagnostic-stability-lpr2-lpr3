@@ -14,6 +14,7 @@ Reduce complexity
 df_outpatient_for_subchapter <- df_raw_outpatient %>%
   filter(ambbesoeg == 1) %>%
   add_LPR23_quarter_column() %>%
+  filter(period < "2022-01-01") %>% 
   select(
     dw_ek_borger,
     datotid_start,

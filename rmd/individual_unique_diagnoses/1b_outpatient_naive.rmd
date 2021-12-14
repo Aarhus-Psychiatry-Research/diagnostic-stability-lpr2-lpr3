@@ -27,6 +27,7 @@ df_raw_outpatient_preprocessed <- df_raw_outpatient %>%
   filter(ambbesoeg == 1) %>%
   keep_only_psych_visits() %>%
   add_LPR23_quarter_column() %>%
+  filter(period < "2022-01-01") %>%
   filter(period > ymd("2012-05-01"))
 ```
 
