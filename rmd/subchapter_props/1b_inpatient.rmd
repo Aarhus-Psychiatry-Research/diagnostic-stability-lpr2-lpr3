@@ -56,14 +56,16 @@ graph_subchapter_props(df_prop_diag_inpatient,
   filename = "examine_inpatient_same_y_axes",
   date_range = c(ymd("2013-01-01"), ymd("2021-01-01")),
   with_mitigation = FALSE,
-  ylabel = "Proportion of inpatients with incident main diagnosis from chapter"
+  ylabel = "Proportion of inpatients with incident main diagnosis from chapter",
+  tag = "A"
 )
 
 graph_subchapter_props(df_prop_diag_inpatient,
   filename = "examine_inpatient_free_y_axes",
   date_range = c(ymd("2013-01-01"), ymd("2021-01-01")),
   with_mitigation = FALSE,
-  ylabel = "Proportion of inpatients with incident main diagnosis from chapter"
+  ylabel = "Proportion of inpatients with incident main diagnosis from chapter",
+  tag = "B"
 )
 
 log_time()

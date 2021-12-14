@@ -23,7 +23,8 @@ graph_subchapter_props <- function(df,
                                    ylabel = "",
                                    p_values = NULL,
                                    nudge_frac = 0.02,
-                                   nudge_constant = 0.02) {
+                                   nudge_constant = 0.02,
+                                   tag = "NA") {
     library("patchwork")
     library("gridExtra")
     library("here")
@@ -48,7 +49,6 @@ graph_subchapter_props <- function(df,
             ymax = prop_ucl
         ))
     }
-
 
     base_plot <- aesthetics +
         geom_point(
@@ -81,7 +81,8 @@ graph_subchapter_props <- function(df,
             color = "Mitigation strategy",
             shape = "Mitigation strategy",
             y = ylabel,
-            x = "Quarter"
+            x = "Quarter",
+            tag = tag
         )
 
     ## combined <- same_y_axes + free_y_axes +

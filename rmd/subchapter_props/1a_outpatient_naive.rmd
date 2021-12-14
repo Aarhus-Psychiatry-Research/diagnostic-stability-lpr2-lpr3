@@ -106,13 +106,15 @@ source(here("src", "subchapter_props_functions.r"))
 graph_subchapter_props(df_mitigation_naive,
   filename = "examine_mitigation_full_same_y_axes",
   date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
-  ylabel = "Proportion of outpatients with incident main diagnosis from chapter"
+  ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
+  tag = "A"
 )
 
 graph_subchapter_props(df_mitigation_naive,
   filename = "examine_mitigation_full_free_y_axes",
   date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
-  ylabel = "Proportion of outpatients with incident main diagnosis from chapter"
+  ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
+  tag = "B"
 )
 
 log_time()
@@ -125,13 +127,15 @@ source(here("src", "subchapter_props_functions.r"))
 graph_subchapter_props(df_mitigation_naive_without_first_quarters,
   filename = "examine_mitigation_without_first_quarters_same_y_axes",
   date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
-  ylabel = "Proportion of outpatients with incident main diagnosis from chapter"
+  ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
+  tag = "A"
 )
 
 graph_subchapter_props(df_mitigation_naive_without_first_quarters,
   filename = "examine_mitigation_without_first_quarters_free_y_axes",
   date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
-  ylabel = "Proportion of outpatients with incident main diagnosis from chapter"
+  ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
+  tag = "B"
 )
 
 log_time()
@@ -177,7 +181,8 @@ graph_subchapter_props(df_mitigation_naive_without_first_quarters,
   date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
   ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
   p_values = df_mitigation_naive_without_first_quarters_p_values,
-  nudge_constant = 0.02
+  nudge_constant = 0.02,
+  tag = "A"
 )
 
 
@@ -186,7 +191,8 @@ graph_subchapter_props(df_mitigation_naive_without_first_quarters,
   date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
   ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
   p_values = df_mitigation_naive_without_first_quarters_p_values,
-  nudge_frac = 0.02
+  nudge_frac = 0.02,
+  tag = "B"
 )
 ```
 
