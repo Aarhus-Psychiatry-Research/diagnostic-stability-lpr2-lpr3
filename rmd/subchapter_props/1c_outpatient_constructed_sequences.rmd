@@ -70,11 +70,15 @@ df_examine_mitigation_constructed_sequences <- mutate(df_prop_diag_constructed_s
   bind_rows(mutate(df_prop_diag_constructed_sequence_most_severe_diag, origin = "Most severe")) %>%
   bind_rows(mutate(df_prop_diag_constructed_sequence_final_visit_only, origin = "Final visit"))
 
+write_csv(df_examine_mitigation_constructed_sequences, here("csv", "df_examine_mitigation_constructed_sequences.csv"))
+
 log_time()
 ```
 
 ```{r}
 ### Plot
+df_examine_mitigation_constructed_sequences <- read_csv(here("csv", "df_examine_mitigation_constructed_sequences.csv"))
+
 source(here::here("src", "subchapter_props_functions.r"))
 
 graph_subchapter_props(df_examine_mitigation_constructed_sequences,

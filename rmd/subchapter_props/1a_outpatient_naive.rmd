@@ -90,15 +90,20 @@ log_time()
 df_mitigation_naive <- mutate(df_prop_diag_outpatient, origin = "Unchanged") %>%
   bind_rows(mutate(df_prop_diag_most_severe_outpatient, origin = "Most severe")) %>%
   bind_rows(mutate(df_prop_diag_outpatient_final_visit_only, origin = "Final visit"))
+write_csv(df_mitigation_naive, here("csv", "df_mitigation_naive.csv"))
 
 df_mitigation_naive_without_first_quarters <- df_mitigation_naive %>%
   filter(period > "2013-01-01")
+write_csv(df_mitigation_naive_without_first_quarters, here("csv", "df_mitigation_naive_without_first_quarters.csv"))
 
 log_time()
 ```
 
 ```{r}
 ### Plot
+df_mitigation_naive <- read_csv(here("csv", "df_mitigation_naive.csv"))
+df_mitigation_naive_without_first_quarters <- read_csv(here("csv", "df_mitigation_naive.csv"))
+
 print(getwd())
 
 source(here("src", "functions.r"))

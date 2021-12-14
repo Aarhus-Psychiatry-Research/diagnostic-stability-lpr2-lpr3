@@ -86,6 +86,8 @@ df_truncation <- df_outpatient_for_individual %>%
     truncation == 3 ~ "FXX.X",
     truncation == 4 ~ "FXX.XX"
   ))
+
+write_csv(df_truncation, here("csv", "df_truncation.csv"))
 ```
 
 ## Plotting
@@ -104,6 +106,11 @@ df_mitigation_without_first_quarters <- create_mitigation_df(
   df_most_severe = df_outpatient_most_severe,
   df_last_visit_only = df_outpatient_last_visit_only
 )
+write_csv(df_mitigation_without_first_quarters, here("csv", "df_mitigation_without_first_quarters.csv"))
+```
+
+```{r}
+df_mitigation_without_first_quarters <- read_csv(here("csv", "df_mitigation_without_first_quarters.csv"))
   
 pacman::p_load(fable, tsibble, feasts, urca)
 
@@ -155,6 +162,7 @@ p
 
 ### Truncation
 ```{r}
+df_truncation <- read_csv(here("csv", "df_truncation.csv"))
 
 ## binary indicator for date in LPR2/LPR3
 df_truncation <- df_truncation %>%
