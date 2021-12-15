@@ -33,6 +33,6 @@ log_time()
 ```{r}
 df_inpatient_for_individual <- df_inpatient_joined %>% 
   add_LPR23_quarter_column() %>%
-  filter(period < "2021-06-01") %>% 
+  filter(period < ymd("2021-06-01")) %>% 
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE)
 ```

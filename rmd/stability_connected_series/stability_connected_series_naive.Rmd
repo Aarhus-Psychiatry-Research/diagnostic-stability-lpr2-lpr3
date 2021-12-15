@@ -20,7 +20,7 @@ source(here("src", "functions.r"))
 ```{r}
 df_raw <- get_fct("FOR_besoeg_fysiske_fremmoeder_inkl_2021") %>%
   clean_sql_import() %>% 
-  filter(period < "2021-06-01")
+  filter(as.Date(datotid_start) < ymd("2021-06-01"))
 
 df <- df_raw %>%
   keep_only_psych_visits() %>%

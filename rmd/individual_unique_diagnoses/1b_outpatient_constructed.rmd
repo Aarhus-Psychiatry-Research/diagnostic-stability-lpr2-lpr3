@@ -29,8 +29,10 @@ df_outpatient_preprocessed <- df_raw_outpatient %>%
     no_threshold_constructed_id
   ) %>%
   add_LPR23_quarter_column() %>%
-  filter(period < "2021-06-01") %>%
+  filter(period < ymd("2021-06-01")) %>%
   filter(period > ymd("2012-05-01"))
+
+write_csv(df_outpatient_preprocessed, here("csv", "df_outpatient_preprocessed.csv"))
 ```
 
 ## No threshold
@@ -46,6 +48,8 @@ df_outpatient_constructed_no_threshold <- df_outpatient_preprocessed %>%
     threshold_months = 0,
     verbose = TRUE
   )
+
+write_csv(df_outpatient_constructed_no_threshold, here("csv", "df_outpatient_constructed_no_threshold.csv"))
 ```
 
 ```{r}
@@ -55,6 +59,8 @@ source(here("src", "functions.r"))
 ```{r no_threshold_default}
 df_outpatient_constructed_no_threshold_default <- df_outpatient_constructed_no_threshold %>%
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
+
+write_csv(df_outpatient_constructed_no_threshold_default, here("csv", "df_outpatient_constructed_no_threshold_default.csv"))
 ```
 
 ```{r most_severe}
@@ -110,7 +116,7 @@ write_csv(df_mitigation, here("csv", "df_mitigation_outpatient_constructed.csv")
 ```
 
 ```{r}
-df_mitigation <- read_csv(here("csv", "df_mitigation_outpatient_constructed-csv"))
+df_mitigation <- read_csv(here("csv", "df_mitigation_outpatient_constructed.csv"))
 pacman::p_load(fable, tsibble, feasts, urca)
 
 ## Binary indicator for date in LPR2/LPR3

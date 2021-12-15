@@ -16,15 +16,17 @@ source(here("src", "functions.r"))
 
 ## General data wrangling
 ```{r get-raw}
-df_raw <- get_fct("FOR_besoeg_fysiske_fremmoeder_inkl_2021") %>%
+df_raw <- get_fct("FOR_besoeg_fysiske_fremmoeder_inkl_2021")
+
+df_preprocessed <- df_raw %>% 
   clean_sql_import() %>% 
-  filter(period < "2021-06-01")
+  filter(as.Date(datotid_start) < ymd("2021-06-01"))
 ```
 
 ## No threshold
 ### Data wrangling
 ```{r construct-no-threshold}
-df_constructed_no_threshold <- df_raw %>%
+df_constructed_no_threshold <- df_preprocessed %>%
   keep_only_psych_visits() %>%
   mutate(adiagnosekode = substring(adiagnosekode, 1, 2)) %>%
   construct_sequences(

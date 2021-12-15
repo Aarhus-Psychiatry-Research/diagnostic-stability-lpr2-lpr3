@@ -1,3 +1,6 @@
+library("pacman")
+p_load(qwraps2, tidyverse)
+
 add_column_unique_pt_in_period <- function(df) {
   df_out <- df %>%
     group_by(period) %>%

@@ -27,7 +27,7 @@ df_inpatient_lpr2 <- df_raw_lpr2_inpatient %>%
   mutate(dw_sk_forloebsansvar = -1) %>% 
   rename(datotid_start = datotid_indlaeggelse)
 
-df_inpatient_joined <- bind_rows(df_inpatient_lpr2, df_inpatient_lpr3)
+df_inpatient_joined <- bind_rows(df_inpatient_lpr2, df_inpatient_lpr3) 
 
 log_time()
   
@@ -36,7 +36,7 @@ log_time()
 ```{r}
 df_inpatient_for_individual <- df_inpatient_joined %>% 
   add_LPR23_quarter_column() %>%
-  filter(period < "2022-01-01") %>% 
+  filter(period < ymd("2021-06-01")) %>% 
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE)
 ```
 
@@ -73,8 +73,10 @@ df_outpatient_preprocessed <- df_raw_outpatient %>%
     no_threshold_constructed_id
   ) %>%
   add_LPR23_quarter_column() %>%
-  filter(period < "2022-01-01") %>%
+  filter(period < ymd("2021-06-01")) %>%
   filter(period > ymd("2012-05-01"))
+
+write_csv(df_outpatient_preprocessed, here("csv", "df_outpatient_preprocessed.csv"))
 ```
 
 ## No threshold
@@ -90,6 +92,8 @@ df_outpatient_constructed_no_threshold <- df_outpatient_preprocessed %>%
     threshold_months = 0,
     verbose = TRUE
   )
+
+write_csv(df_outpatient_constructed_no_threshold, here("csv", "df_outpatient_constructed_no_threshold.csv"))
 ```
 
 ```{r}
@@ -99,6 +103,8 @@ source(here("src", "functions.r"))
 ```{r no_threshold_default}
 df_outpatient_constructed_no_threshold_default <- df_outpatient_constructed_no_threshold %>%
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
+
+write_csv(df_outpatient_constructed_no_threshold_default, here("csv", "df_outpatient_constructed_no_threshold_default.csv"))
 ```
 
 ```{r most_severe}
@@ -154,7 +160,7 @@ write_csv(df_mitigation, here("csv", "df_mitigation_outpatient_constructed.csv")
 ```
 
 ```{r}
-df_mitigation <- read_csv(here("csv", "df_mitigation_outpatient_constructed-csv"))
+df_mitigation <- read_csv(here("csv", "df_mitigation_outpatient_constructed.csv"))
 pacman::p_load(fable, tsibble, feasts, urca)
 
 ## Binary indicator for date in LPR2/LPR3
@@ -242,7 +248,7 @@ df_raw_outpatient_preprocessed <- df_raw_outpatient %>%
   filter(ambbesoeg == 1) %>%
   keep_only_psych_visits() %>%
   add_LPR23_quarter_column() %>%
-  filter(period < "2022-01-01") %>%
+  filter(period < ymd("2021-06-01")) %>%
   filter(period > ymd("2012-05-01"))
 ```
 
@@ -325,7 +331,8 @@ write_csv(df_mitigation_without_first_quarters, here("csv", "df_mitigation_witho
 ```
 
 ```{r}
-df_mitigation_without_first_quarters <- read_csv(here("csv", "df_mitigation_without_first_quarters.csv"))
+df_mitigation_without_first_quarters <- read_csv(here("csv", "df_mitigation_without_first_quarters.csv")) %>% 
+  filter(period < ymd("2021-06-01"))
   
 pacman::p_load(fable, tsibble, feasts, urca)
 
@@ -377,7 +384,8 @@ p
 
 ### Truncation
 ```{r}
-df_truncation <- read_csv(here("csv", "df_truncation.csv"))
+df_truncation <- read_csv(here("csv", "df_truncation.csv")) %>% 
+  filter(period < ymd("2021-06-01"))
 
 ## binary indicator for date in LPR2/LPR3
 df_truncation <- df_truncation %>%
@@ -444,14 +452,18 @@ editor_options:
 ```{r}
 source(here("src", "functions.r"))
 
+df_outpatient_preprocessed <- read_csv(here("csv", "df_outpatient_preprocessed.csv"))
+
 df_outpatient_constructed_3m_threshold <- df_outpatient_preprocessed %>%
   construct_sequences(
-    clinic_id_col = shakgeografiafskode_besoeg,
+    clinic_id_col = shakafskode_besoeg,
     patient_id_col = dw_ek_borger,
     date_col = datotid_start,
     threshold_months = 3,
     verbose = TRUE
   )
+
+write_csv(df_outpatient_constructed_3m_threshold, here("csv", "df_outpatient_constructed_3m_threshold.csv"))
 ```
 
 ```{r}
@@ -459,17 +471,21 @@ source(here("src", "functions.r"))
 ```
 
 ```{r}
+df_outpatient_constructed_3m_threshold <- read_csv(here("csv", "df_outpatient_constructed_3m_threshold.csv"))
+
 df_outpatient_constructed_3m_threshold_default <- df_outpatient_constructed_3m_threshold %>%
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
+
+write_csv(df_outpatient_constructed_3m_threshold_default, here("csv", "df_outpatient_constructed_3m_threshold_default.csv"))
 ```
 
 
 ```{r}
-df_threshold_summarised <- df_outpatient_constructed_3m_threshold_default
-df_naive_summarised <- df_outpatient_constructed_no_threshold_default
+df_threshold_summarised <- read_csv(here("csv", "df_outpatient_constructed_3m_threshold_default.csv"))
+df_naive_summarised <- read_csv(here("csv", "df_outpatient_constructed_no_threshold_default.csv"))
 
-df_source_threshold <- df_outpatient_constructed_3m_threshold
-df_source_naive <- df_outpatient_constructed_no_threshold
+df_source_threshold <- read_csv(here("csv", "df_outpatient_constructed_3m_threshold.csv"))
+df_source_naive <- read_csv(here("csv", "df_outpatient_constructed_no_threshold.csv"))
 ```
 
 

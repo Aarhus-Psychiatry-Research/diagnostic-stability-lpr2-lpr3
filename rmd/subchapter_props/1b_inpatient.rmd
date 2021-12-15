@@ -20,7 +20,7 @@ df_inpatient_lpr2 <- df_raw_lpr2_inpatient %>%
   rename(datotid_start = datotid_indlaeggelse)
 
 df_inpatient_joined <- bind_rows(df_inpatient_lpr2, df_inpatient_lpr3) %>% 
-  filter(period < "2021-06-01")
+  filter(as.Date(datotid_start) < ymd("2021-06-01"))
 
 log_time()
 ```
@@ -29,8 +29,7 @@ log_time()
 df_inpatient_for_subchapter <- df_inpatient_joined %>%
   keep_only_psych_visits() %>%
   truncate_diagnosis_to_letter_and_digit() %>%
-  add_LPR23_quarter_column() %>%
-  filter(period < "2022-01-01")
+  add_LPR23_quarter_column()
 
 ## Examine date parsing
 ## df_examine <- df_inpatient_for_subchapter %>%

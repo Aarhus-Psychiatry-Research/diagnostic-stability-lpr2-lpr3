@@ -9,14 +9,18 @@ editor_options:
 ```{r}
 source(here("src", "functions.r"))
 
+df_outpatient_preprocessed <- read_csv(here("csv", "df_outpatient_preprocessed.csv"))
+
 df_outpatient_constructed_3m_threshold <- df_outpatient_preprocessed %>%
   construct_sequences(
-    clinic_id_col = shakgeografiafskode_besoeg,
+    clinic_id_col = shakafskode_besoeg,
     patient_id_col = dw_ek_borger,
     date_col = datotid_start,
     threshold_months = 3,
     verbose = TRUE
   )
+
+write_csv(df_outpatient_constructed_3m_threshold, here("csv", "df_outpatient_constructed_3m_threshold.csv"))
 ```
 
 ```{r}
@@ -24,17 +28,21 @@ source(here("src", "functions.r"))
 ```
 
 ```{r}
+df_outpatient_constructed_3m_threshold <- read_csv(here("csv", "df_outpatient_constructed_3m_threshold.csv"))
+
 df_outpatient_constructed_3m_threshold_default <- df_outpatient_constructed_3m_threshold %>%
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
+
+write_csv(df_outpatient_constructed_3m_threshold_default, here("csv", "df_outpatient_constructed_3m_threshold_default.csv"))
 ```
 
 
 ```{r}
-df_threshold_summarised <- df_outpatient_constructed_3m_threshold_default
-df_naive_summarised <- df_outpatient_constructed_no_threshold_default
+df_threshold_summarised <- read_csv(here("csv", "df_outpatient_constructed_3m_threshold_default.csv"))
+df_naive_summarised <- read_csv(here("csv", "df_outpatient_constructed_no_threshold_default.csv"))
 
-df_source_threshold <- df_outpatient_constructed_3m_threshold
-df_source_naive <- df_outpatient_constructed_no_threshold
+df_source_threshold <- read_csv(here("csv", "df_outpatient_constructed_3m_threshold.csv"))
+df_source_naive <- read_csv(here("csv", "df_outpatient_constructed_no_threshold.csv"))
 ```
 
 

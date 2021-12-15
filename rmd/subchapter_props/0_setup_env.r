@@ -1,6 +1,6 @@
 source("E:/Users/adminmanber/Desktop/FeasibilityMapper/utils.r")
 
-pacman::p_load(DBI, dplyr, lubridate, ggplot2, stringr, tidyr, zoo)
+pacman::p_load(DBI, dplyr, lubridate, ggplot2, stringr, tidyr, zoo, tidyverse)
 options(lubridate.fasttime = TRUE)
 
 source("E:/Users/adminmanber/Desktop/FeasibilityMapper/utils.r")
