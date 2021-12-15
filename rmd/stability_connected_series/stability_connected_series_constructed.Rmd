@@ -17,7 +17,8 @@ source(here("src", "functions.r"))
 ## General data wrangling
 ```{r get-raw}
 df_raw <- get_fct("FOR_besoeg_fysiske_fremmoeder_inkl_2021") %>%
-  clean_sql_import()
+  clean_sql_import() %>% 
+  filter(period < "2021-06-01")
 ```
 
 ## No threshold

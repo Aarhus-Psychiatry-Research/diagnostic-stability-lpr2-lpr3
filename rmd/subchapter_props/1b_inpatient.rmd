@@ -19,7 +19,8 @@ df_inpatient_lpr2 <- df_raw_lpr2_inpatient %>%
   select(dw_ek_borger, adiagnosekode, datotid_indlaeggelse) %>%
   rename(datotid_start = datotid_indlaeggelse)
 
-df_inpatient_joined <- bind_rows(df_inpatient_lpr2, df_inpatient_lpr3)
+df_inpatient_joined <- bind_rows(df_inpatient_lpr2, df_inpatient_lpr3) %>% 
+  filter(period < "2021-06-01")
 
 log_time()
 ```
