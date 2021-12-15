@@ -17,15 +17,15 @@ render_with_settings <- function(dir) {
 
 # Manually add to future
 ```{r}
-future(render_with_settings("individual_unique_diagnoses"))
+future_individual <- future(render_with_settings("individual_unique_diagnoses"))
 ```
 
 ```{r}
-future(render_with_settings("stability_connected_series"))
+future_connected_series <- future(render_with_settings("stability_connected_series"))
 ```
 
 ```{r}
-future(render_with_settings("subchapter_props"))
+future_subchapter <- future(render_with_settings("subchapter_props"))
 ```
 
 # Manual
