@@ -27,7 +27,7 @@ df_raw_outpatient_preprocessed <- df_raw_outpatient %>%
   filter(ambbesoeg == 1) %>%
   keep_only_psych_visits() %>%
   add_LPR23_quarter_column() %>%
-  filter(period < "2022-01-01") %>%
+  filter(period < "2021-06-01") %>%
   filter(period > ymd("2012-05-01"))
 ```
 
@@ -110,7 +110,8 @@ write_csv(df_mitigation_without_first_quarters, here("csv", "df_mitigation_witho
 ```
 
 ```{r}
-df_mitigation_without_first_quarters <- read_csv(here("csv", "df_mitigation_without_first_quarters.csv"))
+df_mitigation_without_first_quarters <- read_csv(here("csv", "df_mitigation_without_first_quarters.csv")) %>% 
+  filter(period < "2021-06-01")
   
 pacman::p_load(fable, tsibble, feasts, urca)
 

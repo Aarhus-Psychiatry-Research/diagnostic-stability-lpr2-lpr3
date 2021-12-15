@@ -148,7 +148,7 @@ save_mitigation_strategy_plot <- function(df, filename, p_values = NULL, nudge_c
             linetype = "longdash"
         ) +
         geom_label_repel(
-            data = filter(df, period == ymd("2020-10-01")),
+            data = filter(df, period == max(df$period)),
             direction = "y",
             hjust = 0,
             nudge_x = 150,
@@ -179,7 +179,7 @@ save_mitigation_strategy_plot <- function(df, filename, p_values = NULL, nudge_c
             breaks = seq(as.Date("2013-01-01"), as.Date("2021-07-01"), by = "12 months"),
             date_minor_breaks = "3 months",
             date_labels = "%Y",
-            limits = c(ymd("2013-01-01"), ymd("2021-09-01"))
+            limits = c(ymd("2013-01-01"), ymd("2022-06-01"))
         ) +
         scale_y_continuous(limits = c(1, 1.07))
 
