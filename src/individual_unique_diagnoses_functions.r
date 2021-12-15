@@ -1,11 +1,17 @@
 library("ggrepel")
 
-individual_unique_diagnoses_figure_folder <- here::here("figures", "individual_unique_diagnoses_analyses")
+individual_unique_diagnoses_figure_folder <- paste0(here::here("figures", "individual_unique_diagnoses_analyses"), "/")
 if (!dir.exists(individual_unique_diagnoses_figure_folder)) {
     dir.create(individual_unique_diagnoses_figure_folder, recursive = TRUE)
 }
 
 truncation_levels <- c("FXX.XX", "FXX.X", "FXX", "FX")
+
+scale_x_date <- scale_x_date(
+            breaks = seq(as.Date("2013-01-01"), as.Date("2021-07-01"), by = "12 months"),
+            date_minor_breaks = "3 months",
+            date_labels = "%Y",
+            limits = c(ymd("2013-01-01"), ymd("2022-06-01")))
 
 save_truncation_plot <- function(df, filename, p_values = NULL) {
     gg <- ggplot(df, aes(
@@ -33,7 +39,7 @@ save_truncation_plot <- function(df, filename, p_values = NULL) {
             linetype = "longdash"
         ) +
         geom_label_repel(
-            data = filter(df, period == ymd("2020-10-01")),
+            data = filter(df, period == max(df$period)),
             direction = "y",
             hjust = 0,
             nudge_x = 150,
@@ -79,12 +85,7 @@ save_truncation_plot <- function(df, filename, p_values = NULL) {
             x = "",
             y = "Number of different diagnoses in quarter \n for patients with at least one contact in quarter"
         ) +
-        scale_x_date(
-            breaks = seq(as.Date("2013-01-01"), as.Date("2021-07-01"), by = "12 months"),
-            date_minor_breaks = "3 months",
-            date_labels = "%Y",
-            limits = c(ymd("2013-01-01"), ymd("2021-07-01"))
-        )
+        scale_x_date
 
     if (!is.null(p_values)) {
         gg <- gg +
@@ -175,12 +176,7 @@ save_mitigation_strategy_plot <- function(df, filename, p_values = NULL, nudge_c
             y = "Number of different diagnoses in quarter \n for patients with at least one contact in quarter",
             fill = "ICD-10 chapter"
         ) +
-        scale_x_date(
-            breaks = seq(as.Date("2013-01-01"), as.Date("2021-07-01"), by = "12 months"),
-            date_minor_breaks = "3 months",
-            date_labels = "%Y",
-            limits = c(ymd("2013-01-01"), ymd("2022-06-01"))
-        ) +
+        scale_x_date +
         scale_y_continuous(limits = c(1, 1.07))
 
     if (!is.null(p_values)) {
@@ -220,7 +216,7 @@ save_combined_plots <- function(figure1, figure2, title) {
         )
 
     ggsave(
-        paste0(here("figures", "individual_unique_diagnoses"), title, ".png"),
+        paste0(individual_unique_diagnoses_figure_folder, title, ".png"),
         plot = combined,
         width = 10,
         height = 10,

@@ -163,7 +163,8 @@ p
 
 ### Truncation
 ```{r}
-df_truncation <- read_csv(here("csv", "df_truncation.csv"))
+df_truncation <- read_csv(here("csv", "df_truncation.csv")) %>% 
+  filter(period < "2021-06-01")
 
 ## binary indicator for date in LPR2/LPR3
 df_truncation <- df_truncation %>%
