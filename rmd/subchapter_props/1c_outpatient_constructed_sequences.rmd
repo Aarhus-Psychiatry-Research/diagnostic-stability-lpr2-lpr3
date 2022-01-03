@@ -20,7 +20,8 @@ df_constructed_outpatient_series <- df_outpatient_for_subchapter %>%
     date_col = datotid_start,
     threshold_months = 0,
     verbose = TRUE
-  ) %>% filter(period < ymd("2021-06-01"))
+  ) %>% 
+  filter(period < ymd("2021-06-01"))
 ```
 
 #### Default 

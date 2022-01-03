@@ -14,6 +14,7 @@ Reduce complexity
 ```{r}
 df_outpatient_for_subchapter <- df_raw_outpatient %>%
   filter(ambbesoeg == 1) %>%
+  filter(substr(adiagnosekode, 1, 3) != "F99") %>% 
   add_LPR23_quarter_column() %>%
   filter(period < ymd("2021-06-01")) %>%
   select(

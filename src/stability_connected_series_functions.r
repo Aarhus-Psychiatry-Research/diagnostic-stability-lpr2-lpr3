@@ -1,6 +1,7 @@
 stability_connected_series_figure_folder <- "E:/Users/adminmanber/Desktop/LPR2-LPR3/figures/stability_of_a_connected_series_analyses/"
 
 source(here("src", "ggplot_defaults.r"))
+library("ggrepel")
 
 save_alluvial_plot <- function(df, filename = "allu_first_last") {
     base_plot <- ggplot(
@@ -17,7 +18,7 @@ save_alluvial_plot <- function(df, filename = "allu_first_last") {
         default_theme +
         geom_alluvium(
             knot.prop = TRUE,
-            width = 1 / 6,
+            width = 1 / 5,
             knot.pos = 0
         ) +
         scale_alpha(
@@ -29,30 +30,35 @@ save_alluvial_plot <- function(df, filename = "allu_first_last") {
             y = "Proportion of connected series of events"
         ) +
         theme(
+            axis.title = element_text(size = 30),
+            axis.text.x = element_text(size = 30),
             axis.text.y = element_blank(),
             axis.ticks.y = element_blank(),
             legend.position = "none",
-            axis.title = element_text(size = 20),
-            axis.title.x.top = element_text(
-                margin = margin(-1500, 0, -0, 0)
-            ),
-            axis.text.x = element_text(size = 18),
             panel.grid.major = element_blank(),
             panel.grid.minor = element_blank(),
-            axis.line = element_blank(),
+            axis.line = element_blank()
         ) +
         scale_fill_manual(values = au_colours_combined) +
         geom_stratum(
             fill = "grey95",
             colour = "grey70",
-            width = 1 / 6
+            width = 1 / 5
         ) +
-        geom_text(
+        geom_label_repel(
             stat = "stratum",
+            size = 10,
+            force = 0.01,
+            force_pull = 500,
             aes(
-                label = after_stat(stratum),
-                size = 15
-            )
+                label = after_stat(stratum)
+            ),
+            direction = c("y"),
+            point.size = NA,
+            color = "black",
+            fill = "white",
+            label.padding = 1,
+            label.r = 0.6
         ) +
         scale_size(guide = "none") +
         scale_x_discrete(

@@ -1,0 +1,34 @@
+
+Dataframes from 1b_outpatient_constructed
+
+```{r}
+max(df_outpatient_preprocessed$datotid_start) # End-date
+
+length(unique(df_raw_outpatient_preprocessed$dw_ek_borger)) # Unique outpatients
+
+dim(df_outpatient_preprocessed) # Number of visits
+
+```
+
+# Description of visit numbers
+```{r}
+df_visits_pr_patient <- df_outpatient_preprocessed %>% 
+  group_by(dw_ek_borger) %>% 
+  summarise(n_visits = n())
+
+skim(df_visits_pr_patient$n_visits)
+
+median(df_visits_pr_patient$n_visits)
+```
+
+```{r}
+dim(df_outpatient_preprocessed %>% filter(substr(adiagnosekode, 1, 3) == "F99"))
+
+df_f99_visits <- df_outpatient_preprocessed %>% 
+    filter(substr(adiagnosekode, 1, 3) == "F99")
+
+df_f9_visits <- df_outpatient_preprocessed %>% 
+    filter(substr(adiagnosekode, 1, 2) == "F9")
+
+```
+

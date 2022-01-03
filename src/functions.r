@@ -78,7 +78,10 @@ recode_with_most_severe_diagnosis_for_sequence <- function(df, id_column_1, id_c
 }
 
 keep_only_psych_visits <- function(df) {
-  return(df %>% filter(substring(adiagnosekode, 1, 1) == "F"))
+  df %>% filter(substring(adiagnosekode, 1, 1) == "F") %>% 
+    filter(substr(adiagnosekode, 1, 3) != "F99")
+
+  return(df)
 }
 
 truncate_diagnosis_to_letter_and_digit <- function(df) {
