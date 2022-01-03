@@ -55,8 +55,8 @@ save_alluvial_plot <- function(df, filename = "allu_first_last") {
             ),
             direction = c("y"),
             point.size = NA,
-            color = "black",
-            fill = "white",
+            color = "grey25",
+            fill = "grey95",
             label.padding = 1,
             label.r = 0.6
         ) +
