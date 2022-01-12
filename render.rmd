@@ -19,8 +19,13 @@ render_with_settings <- function(dir) {
 
 # Test
 ```{r}
-test_file(here("tests", "testthat", "test-functions.r"))
+test_file(here("tests", "test_functions.r"))
 ```
+
+```{r}
+test_file(here("tests", "test_that_doubling.r"))
+```
+
 
 
 # Then run

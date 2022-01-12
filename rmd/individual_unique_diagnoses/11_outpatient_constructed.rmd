@@ -5,40 +5,16 @@ editor_options:
   chunk_output_type: inline
 ---
 
-```{r}
-source(here("rmd", "individual_unique_diagnoses", "0_setup_env_unique_diagnoses.r"))
-```
-
 # Individual unique diagnoses, outpatient constructed
 ## Data wrangling 
 ### Base pre-processing
-```{r}
-source(here("src", "functions.r"))
-```
 
-## 3m threshold
-### Construct sequences and save
-```{r}
-source(here("src", "functions.r"))
-
-df_outpatient_constructed_3m_threshold <- df_outpatient_preprocessed %>%
-  construct_sequences(
-    clinic_id_col = shakafskode_besoeg,
-    patient_id_col = dw_ek_borger,
-    date_col = datotid_start,
-    threshold_months = 3,
-    verbose = TRUE
-  )
-
-write_csv(df_outpatient_constructed_no_threshold, here("csv", "df_outpatient_constructed_3m_threshold.csv"))
 ```
 
 
 ## No threshold
 ### Construct sequences
 ```{r}
-source(here("src", "functions.r"))
-
 df_outpatient_constructed_no_threshold <- df_outpatient_preprocessed %>%
   construct_sequences(
     clinic_id_col = shakafskode_besoeg,
@@ -49,10 +25,6 @@ df_outpatient_constructed_no_threshold <- df_outpatient_preprocessed %>%
   )
 
 write_csv(df_outpatient_constructed_no_threshold, here("csv", "df_outpatient_constructed_no_threshold.csv"))
-```
-
-```{r}
-source(here("src", "functions.r"))
 ```
 
 ```{r no_threshold_default}
@@ -77,14 +49,9 @@ df_outpatient_constructed_no_threshold_last_visit_only <- df_outpatient_construc
 
 write_csv(df_outpatient_constructed_no_threshold_default, here("csv", "df_outpatient_constructed_no_threshold_last_visit_only.csv"))
 
-log_time()
-```
-
 ### Plotting
 ```{r fig.height=5, fig.width=10}
 log_time()
-source(here("src", "individual_unique_diagnoses_functions.r"))
-source(here("src", "functions.r"))
 
 df_mitigation_constructed_no_threshold_plot <- create_mitigation_df(
   df_default = df_outpatient_constructed_no_threshold_default,
@@ -97,9 +64,11 @@ write_csv(df_mitigation_constructed_no_threshold_plot, here("csv", "df_mitigatio
 
 ```{r}
 df_mitigation_constructed_no_threshold_plot <- read_csv(here("csv", "df_mitigation_constructed_no_threshold_plot.csv"))
-mitigation_constructed_no_threshold_plot <- save_mitigation_strategy_plot(df_mitigation_constructed_no_threshold_plot,
-                                                                          "mitigation_constructed_no_threshold",
-                                                                          exclusive_column_for_lpr2 = "Unmitigated")
+
+mitigation_constructed_no_threshold_plot <- save_mitigation_strategy_plot(
+  df_mitigation_constructed_no_threshold_plot,
+  "mitigation_constructed_no_threshold",
+  exclusive_column_for_lpr2 = "Unmitigated")
 
 mitigation_constructed_no_threshold_plot
 ```
@@ -108,7 +77,6 @@ mitigation_constructed_no_threshold_plot
 ## Plots with P-values
 ### Mitigation, no threshold
 ```{r}
-source(here("src", "functions.r"))
 df_mitigation <- create_mitigation_df(
   df_default = df_outpatient_constructed_no_threshold_default,
   df_most_severe = df_outpatient_constructed_no_threshold_most_severe,

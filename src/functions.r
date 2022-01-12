@@ -88,28 +88,27 @@ add_LPR23_quarter_column <- function(df) {
   return(df_out)
 }
 
-recode_diagnoses_with_last_in_sequence <- function(df, id_column_1, id_column_2, two_columns = FALSE) {
-  recode_with_last <- function(df, id_col) {
-    df_out <- df %>%
-      filter({{ id_col }} != -1) %>%
+
+#' Takes a dataframe with visits as rows,
+#' and overwrites their adiagnosekode with the last from
+#' the connected series of visits.
+#' 
+#' Ignores visits if id_column == ignore_id
+#' 
+#' @param id_col The ID column for the visits
+#' @param ignore_id
+recode_diagnoses_with_last_in_sequence <- function(df, id_col, ignore_id = -1) {
+  df_lpr2 <- df %>% 
+    filter({{ id_col }} == ignore_id)
+
+  df_lpr3 <- df %>% 
+    filter({{ id_col }} != ignore_id) %>%
       group_by({{ id_col }}) %>%
       arrange(desc(datotid_start), .group_by = TRUE) %>%
-      mutate(adiagnosekode = adiagnosekode[1])
-    
-    return(df_out)
-  }
+      mutate(adiagnosekode = adiagnosekode[1]) %>% 
+      ungroup()
   
-  if (two_columns == FALSE) {
-    return(recode_with_last(df, {{ id_column_1 }}))
-  } else {
-    df_lpr3 <- df %>%
-      recode_with_last({{ id_column_2 }})
-    
-    df_lpr2 <- df %>%
-      recode_with_last({{ id_column_1 }})
-    
-    return(bind_rows(df_lpr3, df_lpr2))
-  }
+  return(bind_rows(df_lpr3, df_lpr2))
 }
 
 gen_unique_diagnoses_pr_patient <- function(df, confidence_intervals = TRUE, truncation_levels = TRUE) {
@@ -134,6 +133,7 @@ gen_unique_diagnoses_pr_patient <- function(df, confidence_intervals = TRUE, tru
   ## Handle confidence intervals
   if (confidence_intervals == TRUE) {
     if (truncation_levels == TRUE) {
+
       ## Generate confidence intervals
       df <- df %>%
         group_by(period) %>%
@@ -146,7 +146,9 @@ gen_unique_diagnoses_pr_patient <- function(df, confidence_intervals = TRUE, tru
         )
       
       truncation_levels_list <- list(1, 2, 3, 4)
+
     } else {
+
       df <- df %>%
         group_by(period) %>%
         summarise(
@@ -155,6 +157,7 @@ gen_unique_diagnoses_pr_patient <- function(df, confidence_intervals = TRUE, tru
         )
       
       truncation_levels_list <- list(2)
+
     }
     
     ## Unnest confidence intervals
@@ -167,6 +170,7 @@ gen_unique_diagnoses_pr_patient <- function(df, confidence_intervals = TRUE, tru
           !!str_c("ucl_", i) := ucl
         )
     }
+
   } else {
     df <- df %>%
       unnest_wider(paste0("mean.ci.", i)) %>%
@@ -191,11 +195,24 @@ log_time <- function() {
 #' @param df
 #' @param clinic_id_col
 #' @param patient_id_col
-#' @param time_threshold
+#' @param datetime_col_name A string representation of the name of the datetime_col. An unfortunate side_effect of using dplyr.
+#' @param time_threshold Number of months between visits to consider a new sequence
+#' 
 #'
 #' @return df_with_constructed_sequences
 
-construct_sequences <- function(df, clinic_id_col, patient_id_col, date_col, threshold_months = 0, verbose = TRUE) {
+construct_sequences <- function(
+                        df, 
+                        clinic_id_col, 
+                        patient_id_col, 
+                        datetime_col, 
+                        datetime_col_name,
+                        threshold_months = 0, 
+                        verbose = TRUE) 
+                       {
+  
+  stopifnot(is.POSIXct(df[[datetime_col_name]]))
+
   df <- df %>% mutate(no_threshold_constructed_id = paste0({{ patient_id_col }}, {{ clinic_id_col }}))
   
   if (threshold_months == 0) {
@@ -206,10 +223,10 @@ construct_sequences <- function(df, clinic_id_col, patient_id_col, date_col, thr
     THRESHOLD_MONTHS_IN_SECONDS <- MONTH_IN_SECONDS * threshold_months
     
     df <- df %>%
-      mutate(last_datotid_start = lag(datotid_start)) %>%
+      mutate(last_datotid_start = lag({{datetime_col}})) %>%
       mutate(threshold_date = last_datotid_start + THRESHOLD_MONTHS_IN_SECONDS) %>%
-      mutate(split_sequence_vectorised = if_else(threshold_date < datotid_start, 1, 0)) %>%
-      arrange(dw_ek_borger, no_threshold_constructed_id, {{ date_col }})
+      mutate(split_sequence_vectorised = if_else(threshold_date < {{datetime_col}}, 1, 0)) %>%
+      arrange({{patient_id_col}}, no_threshold_constructed_id, {{ datetime_col }})
     
     current_no_threshold_id <- 0 ## The ID constructed without taking thresholds into account
     current_threshold_sequence_id <- 0
@@ -272,7 +289,12 @@ construct_sequences <- function(df, clinic_id_col, patient_id_col, date_col, thr
     df$constructed_id <- constructed_ids
   }
   
-  return(df)
+  return(df %>% select(-c(
+    no_threshold_constructed_id, 
+    last_datotid_start, 
+    split_sequence_vectorised, 
+    prev_id, 
+    split_sequence)))
 }
 
 create_mitigation_df <- function(df_default, df_most_severe, df_last_visit_only) {

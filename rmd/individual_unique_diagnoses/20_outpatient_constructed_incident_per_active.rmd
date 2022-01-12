@@ -1,4 +1,18 @@
 # Generate records with sequence IDs (cached in .csv below)
+## 3m threshold
+```{r}
+df_outpatient_constructed_3m_threshold <- df_outpatient_preprocessed %>%
+  construct_sequences(
+    clinic_id_col = shakafskode_besoeg,
+    patient_id_col = dw_ek_borger,
+    date_col = datotid_start,
+    threshold_months = 3,
+    verbose = TRUE
+  )
+
+write_csv(df_outpatient_constructed_3m_threshold, here("csv", "df_outpatient_constructed_3m_threshold.csv"))
+```
+
 ```{r}
 df_outpatient_constructed_3m_threshold <- read_csv(here("csv", "df_outpatient_constructed_3m_threshold.csv"))
 ```
