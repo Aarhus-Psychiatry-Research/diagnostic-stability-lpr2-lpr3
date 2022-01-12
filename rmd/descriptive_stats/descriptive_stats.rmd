@@ -4,7 +4,7 @@ Dataframes from 1b_outpatient_constructed
 ```{r}
 max(df_outpatient_preprocessed$datotid_start) # End-date
 
-length(unique(df_raw_outpatient_preprocessed$dw_ek_borger)) # Unique outpatients
+length(unique(df_outpatient_preprocessed$dw_ek_borger)) # Unique outpatients
 
 dim(df_outpatient_preprocessed) # Number of visits
 

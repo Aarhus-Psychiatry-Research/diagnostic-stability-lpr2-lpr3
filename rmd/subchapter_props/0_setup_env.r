@@ -1,9 +1,9 @@
-source("E:/Users/adminmanber/Desktop/FeasibilityMapper/utils.r")
+source(here("src", "utils.r"))
 
 pacman::p_load(DBI, dplyr, lubridate, ggplot2, stringr, tidyr, zoo, tidyverse)
 options(lubridate.fasttime = TRUE)
 
-source("E:/Users/adminmanber/Desktop/FeasibilityMapper/utils.r")
+source(here("src", "utils.r"))
 source(here::here("src", "functions.r"))
 
 df_raw_outpatient <- get_fct("FOR_besoeg_fysiske_fremmoeder_inkl_2021") %>%

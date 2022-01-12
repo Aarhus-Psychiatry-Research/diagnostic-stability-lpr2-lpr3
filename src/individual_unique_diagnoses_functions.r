@@ -13,7 +13,20 @@ scale_x_date <- scale_x_date(
             date_labels = "%Y",
             limits = c(ymd("2013-01-01"), ymd("2022-06-01")))
 
+y_limits <- scale_y_continuous(
+    limits = c(1.0, 1.09)
+)
+
+source(here("src", "ggplot_defaults.r"))
+
 save_truncation_plot <- function(df, filename, p_values = NULL) {
+    plot_colours = c(
+                rgb(219 / 255, 139 / 255, 195 / 255),
+                rgb(140 / 255, 140 / 255, 140 / 255),
+                rgb(204 / 255, 185 / 255, 116 / 255), # FXX
+                rgb(100 / 255, 181 / 255, 205 / 255)
+            )
+
     gg <- ggplot(df, aes(
         x = as.Date(period),
         y = mean,
@@ -34,9 +47,21 @@ save_truncation_plot <- function(df, filename, p_values = NULL) {
                 xintercept = ymd("2019-02-15")
             ),
             size = 1,
-            alpha = 0.1,
-            colour = "black",
-            linetype = "longdash"
+            alpha = 0.15,
+            colour = "black"
+        ) +
+        default_theme +
+        scale_color_manual(
+            values = plot_colours,
+            limits = truncation_levels
+        ) +
+        scale_fill_manual(
+            values = plot_colours,
+            limits = truncation_levels
+        ) +
+        scale_shape_manual(
+            values = c(16, 15, 17, 18),
+            limits = truncation_levels
         ) +
         geom_label_repel(
             data = filter(df, period == max(df$period)),
@@ -52,31 +77,10 @@ save_truncation_plot <- function(df, filename, p_values = NULL) {
                 label = truncation
             )
         ) +
-        default_theme +
-        scale_color_manual(
-            values = c(
-                rgb(76 / 255, 114 / 255, 176 / 255),
-                rgb(221 / 255, 132 / 255, 82 / 255),
-                rgb(75 / 255, 167 / 255, 104 / 255),
-                rgb(196 / 255, 78 / 255, 82 / 255)
-            ),
-            limits = truncation_levels
-        ) +
-        scale_fill_manual(
-            values = c(
-                rgb(76 / 255, 114 / 255, 176 / 255),
-                rgb(221 / 255, 132 / 255, 82 / 255),
-                rgb(75 / 255, 167 / 255, 104 / 255),
-                rgb(196 / 255, 78 / 255, 82 / 255)
-            ),
-            limits = truncation_levels
-        ) +
-        scale_shape_manual(
-            values = c(16, 15, 17, 18),
-            limits = truncation_levels
-        ) +
         theme(
-            axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+            axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 12),
+            axis.text.y = element_text(size = 12),
+            axis.title = element_text(size = 15),
             legend.position = "None",
             panel.grid.minor = element_blank(),
             panel.grid.major = element_blank()
@@ -85,7 +89,8 @@ save_truncation_plot <- function(df, filename, p_values = NULL) {
             x = "",
             y = "Number of different diagnoses in quarter \n for patients with at least one contact in quarter"
         ) +
-        scale_x_date
+        scale_x_date +
+        y_limits
 
     if (!is.null(p_values)) {
         gg <- gg +
@@ -101,7 +106,7 @@ save_truncation_plot <- function(df, filename, p_values = NULL) {
                 hjust = -1.3,
                 show.legend = FALSE
             )
-    }
+    } 
 
 
     ggsave(paste0(individual_unique_diagnoses_figure_folder, filename, ".png"),
@@ -115,7 +120,11 @@ save_truncation_plot <- function(df, filename, p_values = NULL) {
 }
 
 save_mitigation_strategy_plot <- function(df, filename, p_values = NULL, nudge_constant = 0, exclusive_column_for_lpr2 = NA) {
-    plot_colors <- c("steelblue", "forestgreen", "#C93312", "#DC863B", "#E1AF00", "slateblue4")
+    plot_colors <- c(
+        rgb(129 / 255, 114 / 255, 179 / 255),
+        rgb(148 / 255, 120 / 255, 96 / 255),
+        rgb(204 / 255, 185 / 255, 116 / 255)
+    )
 
     if (!is.na(exclusive_column_for_lpr2)) {
         df <- df %>% filter(period > ymd("2019-01-01") | origin == exclusive_column_for_lpr2)
@@ -142,11 +151,13 @@ save_mitigation_strategy_plot <- function(df, filename, p_values = NULL, nudge_c
                 color = origin
             )
         ) +
+        scale_shape_manual(
+            values = c(7, 9, 17)
+        ) +
         geom_vline(
             aes(xintercept = ymd("2019-02-15")),
-            size = 1, alpha = 0.1,
-            colour = "black",
-            linetype = "longdash"
+            size = 1, alpha = 0.15,
+            colour = "black"
         ) +
         geom_label_repel(
             data = filter(df, period == max(df$period)),
@@ -166,7 +177,9 @@ save_mitigation_strategy_plot <- function(df, filename, p_values = NULL, nudge_c
         scale_fill_manual(values = plot_colors) +
         default_theme +
         theme(
-            axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+            axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 12),
+            axis.text.y = element_text(size = 12),
+            axis.title = element_text(size = 15),
             legend.position = "None",
             panel.grid.minor = element_blank(),
             panel.grid.major = element_blank()
@@ -177,7 +190,7 @@ save_mitigation_strategy_plot <- function(df, filename, p_values = NULL, nudge_c
             fill = "ICD-10 chapter"
         ) +
         scale_x_date +
-        scale_y_continuous(limits = c(1, 1.07))
+        y_limits
 
     if (!is.null(p_values)) {
         p_values <- p_values %>% 
@@ -189,8 +202,8 @@ save_mitigation_strategy_plot <- function(df, filename, p_values = NULL, nudge_c
             geom_text(
                 data = p_values,
                 aes(label = significant),
-                size = 5,
-                hjust = -1.3,
+                size = 7,
+                hjust = -1,
                 show.legend = FALSE
             )
     }
@@ -198,7 +211,7 @@ save_mitigation_strategy_plot <- function(df, filename, p_values = NULL, nudge_c
     ggsave(here::here(individual_unique_diagnoses_figure_folder, str_c(filename, ".png")),
         plot = gg,
         width = 10,
-        height = 5,
+        height = 6,
         dpi = 600
     )
 
@@ -219,7 +232,126 @@ save_combined_plots <- function(figure1, figure2, title) {
         paste0(individual_unique_diagnoses_figure_folder, title, ".png"),
         plot = combined,
         width = 10,
-        height = 10,
+        height = 12,
+        dpi = 600
+    )
+
+    return(combined)
+}
+
+save_incident_per_active_plot <- function(df, filename, p_values = NULL, nudge_constant = 0, exclusive_column_for_lpr2 = NA) {
+    plot_colors <- c(
+        rgb(129 / 255, 114 / 255, 179 / 255),
+        rgb(148 / 255, 120 / 255, 96 / 255),
+        rgb(204 / 255, 185 / 255, 116 / 255)
+    )
+
+    if (!is.na(exclusive_column_for_lpr2)) {
+        df <- df %>% filter(period > ymd("2019-01-01") | origin == exclusive_column_for_lpr2)
+    }
+
+    gg <- ggplot(
+        df,
+        aes(
+            x = as.Date(period),
+            y = diag_per_active,
+            color = origin
+        )
+    ) +
+        geom_linerange(
+            aes(
+                ymin = lcl,
+                ymax = ucl
+            ),
+            alpha = 0.1,
+        ) +
+        geom_point(
+            aes(
+                shape = origin,
+                color = origin
+            )
+        ) +
+        scale_shape_manual(
+            values = c(7, 9, 17)
+        ) +
+        geom_vline(
+            aes(xintercept = ymd("2019-02-15")),
+            size = 1, alpha = 0.15,
+            colour = "black"
+        ) +
+        geom_label_repel(
+            data = filter(df, period == max(df$period)),
+            direction = "y",
+            hjust = 0,
+            nudge_x = 150,
+            xlim = c(-Inf, Inf), ylim = c(-Inf, Inf),
+            color = "white",
+            force = 0.2,
+            mapping = aes(
+                fill = origin,
+                segment.color = NA,
+                label = origin
+            )
+        ) +
+        scale_color_manual(values = plot_colors) +
+        scale_fill_manual(values = plot_colors) +
+        default_theme +
+        theme(
+            axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 12),
+            axis.text.y = element_text(size = 12),
+            axis.title = element_text(size = 15),
+            legend.position = "None",
+            panel.grid.minor = element_blank(),
+            panel.grid.major = element_blank()
+        ) +
+        labs(
+            x = "",
+            y = "Number of different diagnoses in quarter \n for patients with at least one contact in quarter",
+            fill = "ICD-10 chapter"
+        ) +
+        scale_x_date
+
+    if (!is.null(p_values)) {
+        p_values <- p_values %>% 
+            mutate(mean_2 = if_else(origin == "Most severe", 
+                            mean_2 + nudge_constant, 
+                            mean_2))
+
+        gg <- gg +
+            geom_text(
+                data = p_values,
+                aes(label = significant),
+                size = 7,
+                hjust = -1,
+                show.legend = FALSE
+            )
+    }
+
+    ggsave(here::here(individual_unique_diagnoses_figure_folder, str_c(filename, ".png")),
+        plot = gg,
+        width = 10,
+        height = 6,
+        dpi = 600
+    )
+
+    return(gg)
+}
+
+save_combined_plots <- function(figure1, figure2, title) {
+    library("patchwork")
+
+    combined <- figure1 + figure2 +
+        plot_annotation(tag_levels = "A") +
+        plot_layout(
+            ncol = 1,
+            guides = "collect"
+        )
+
+    ggsave(
+        paste0(individual_unique_diagnoses_figure_folder, title, ".png"),
+        plot = combined,
+        width = 10,
+        height = 12,
         dpi = 600
     )
 

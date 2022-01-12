@@ -14,25 +14,25 @@ source(here("rmd", "individual_unique_diagnoses", "0_setup_env_unique_diagnoses.
 ### Base pre-processing
 ```{r}
 source(here("src", "functions.r"))
-
-df_outpatient_preprocessed <- df_raw_outpatient %>%
-  mutate(no_threshold_constructed_id = paste0(dw_ek_borger, shakafskode_besoeg)) %>%
-  keep_only_psych_visits() %>%
-  select(
-    dw_ek_borger,
-    datotid_start,
-    adiagnosekode,
-    ambbesoeg,
-    dw_sk_lpr3forloebsansvar,
-    dw_sk_kontakt,
-    shakafskode_besoeg,
-    no_threshold_constructed_id
-  ) %>%
-  add_LPR23_quarter_column() %>%
-  filter(period > ymd("2012-05-01"))
-
-write_csv(df_outpatient_preprocessed, here("csv", "df_outpatient_preprocessed.csv"))
 ```
+
+## 3m threshold
+### Construct sequences and save
+```{r}
+source(here("src", "functions.r"))
+
+df_outpatient_constructed_3m_threshold <- df_outpatient_preprocessed %>%
+  construct_sequences(
+    clinic_id_col = shakafskode_besoeg,
+    patient_id_col = dw_ek_borger,
+    date_col = datotid_start,
+    threshold_months = 3,
+    verbose = TRUE
+  )
+
+write_csv(df_outpatient_constructed_no_threshold, here("csv", "df_outpatient_constructed_3m_threshold.csv"))
+```
+
 
 ## No threshold
 ### Construct sequences
@@ -66,12 +66,16 @@ write_csv(df_outpatient_constructed_no_threshold_default, here("csv", "df_outpat
 df_outpatient_constructed_no_threshold_most_severe <- df_outpatient_constructed_no_threshold %>%
   recode_with_most_severe_diagnosis_for_sequence(constructed_id) %>%
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
+
+write_csv(df_outpatient_constructed_no_threshold_default, here("csv", "df_outpatient_constructed_no_threshold_most_severe.csv"))
 ```
 
 ```{r last_visit_only}
 df_outpatient_constructed_no_threshold_last_visit_only <- df_outpatient_constructed_no_threshold %>%
   recode_diagnoses_with_last_in_sequence(constructed_id) %>%
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
+
+write_csv(df_outpatient_constructed_no_threshold_default, here("csv", "df_outpatient_constructed_no_threshold_last_visit_only.csv"))
 
 log_time()
 ```

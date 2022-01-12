@@ -10,7 +10,7 @@ always_allow_html: yes
 ```{r}
 pacman::p_load(DBI, data.table, dtply, dplyr, lubridate, ggplot2, stringr, tidyr, ggalluvial, here)
 
-source("E:/Users/adminmanber/Desktop/FeasibilityMapper/utils.r")
+source(here("src", "utils.r"))
 source(here("src", "functions.r"))
 ```
 

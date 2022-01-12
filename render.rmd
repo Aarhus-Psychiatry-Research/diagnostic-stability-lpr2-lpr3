@@ -4,9 +4,8 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-library("bookdown")
-library("here")
-library("future")
+library("pacman")
+p_load(bookdown, here, future, testthat)
 future.seed = TRUE
 plan(multisession)
 
@@ -18,7 +17,13 @@ render_with_settings <- function(dir) {
 
 ```
 
-# Manually add to future
+# Test
+```{r}
+test_file(here("tests", "testthat", "test-functions.r"))
+```
+
+
+# Then run
 ```{r}
 future_individual %<-% render_with_settings("individual_unique_diagnoses")
 ```
@@ -35,7 +40,6 @@ future_connected_series
 ```
 
 
-### Subchapter
 ```{r}
 future_subchapter %<-% render_with_settings("subchapter_props")
 ```
@@ -43,62 +47,5 @@ future_subchapter %<-% render_with_settings("subchapter_props")
 future_subchapter
 ```
 
-# Manual
-## Individual unique diagnoses
-```{r}
-render_with_settings("individual_unique_diagnoses")
-```
-
-```{r}
-render_with_settings("stability_connected_series")
-```
-
-```{r}
-render_with_settings("subchapter_props")
-```
-
-```{r}
-bookdown::render_book(input = here("rmd"), 
-                        output_format = "bookdown::gitbook",
-                        output_dir = here("books", "combined"))
-```
-
-## Try out parallel processing
-```{r setup, include=FALSE}
-library("bookdown")
-library("here")
-
-library("future")
-plan(multisession)
-
-
-dirs = c("stability_connected_series", 
-         "subchapter_props",
-         "individual_unique_diagnoses")
-
-for (dir in dirs) {
-  future(
-    bookdown::render_book(input = here("rmd", dir), 
-                        output_format = "bookdown::gitbook",
-                        output_dir = here("books", dir))
-  )
-}
-
-```
-
-```{r}
-library("knitr")
-files = c("stability_connected_series/stability_connected_series_constructed.rmd",
-          "stability_connected_series/stability_connected_series_naive.rmd")
-
-setwd(here("knitted"))
-
-for (rel_path in files) {
-  knit(
-    text = paste0(here("rmd"), rel_path)
-  )
-}
-
-```
 
 

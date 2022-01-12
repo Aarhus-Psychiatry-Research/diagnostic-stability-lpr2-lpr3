@@ -14,7 +14,6 @@ Reduce complexity
 ```{r}
 df_outpatient_for_subchapter <- df_raw_outpatient %>%
   filter(ambbesoeg == 1) %>%
-  filter(substr(adiagnosekode, 1, 3) != "F99") %>% 
   add_LPR23_quarter_column() %>%
   filter(period < ymd("2021-06-01")) %>%
   select(
@@ -160,6 +159,7 @@ pacman::p_load(fable, tsibble, feasts, urca)
 
 
 df_mitigation_naive_without_first_quarters_p_values <- df_mitigation_naive_without_first_quarters %>%
+  filter(substr(adiagnosekode, 1, 1) == "F") %>% 
   mutate(
     lpr3 = if_else(period < "2019-02-03", 0, 1),
     period = yearquarter(period)
@@ -170,6 +170,23 @@ df_mitigation_naive_without_first_quarters_p_values <- df_mitigation_naive_witho
   coef() %>%
   select(!.model) %>%
   filter(term == "lpr3")
+```
+
+```{r}
+df_mitigation_naive_without_first_quarters_changes <- df_mitigation_naive_without_first_quarters_p_values %>% 
+  mutate(
+    before = percent(prop, accuracy = .1),
+    after = percent(prop + estimate, accuracy = .1),
+    difference_in_percentage_points = percent(estimate, accuracy = .1),
+    ratio_in_percent = percent(estimate/prop, accuracy = .1)) %>% 
+  select(adiagnosekode, before, after, difference_in_percentage_points, ratio_in_percent, origin, difference_in_percentage_points)
+```
+
+```{r}
+write.csv(df_mitigation_naive_without_first_quarters_changes, here("tables", "subchapter_prop_changes.csv"))
+```
+
+```{r}
 
 ## add the needed x (period) and y (prop) values for plotting
 df_mitigation_naive_without_first_quarters_p_values <- df_mitigation_naive_without_first_quarters %>%
@@ -179,8 +196,6 @@ df_mitigation_naive_without_first_quarters_p_values <- df_mitigation_naive_witho
   mutate(corrected_p <- p.adjust(p.value, "fdr", n = 70), # 30 comparisons
     significant = if_else(corrected_p < 0.05, "*", "")
   )
-
-df_mitigation_naive_without_first_quarters_p_values
 ```
 
 

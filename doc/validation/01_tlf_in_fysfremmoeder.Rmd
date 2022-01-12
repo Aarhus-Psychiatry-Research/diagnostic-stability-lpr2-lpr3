@@ -6,6 +6,22 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+library(pacman)
+
+p_load(
+  DBI,
+  data.table,
+  dtplyr, 
+  dplyr,
+  lubridate,
+  ggplot2,
+  stringr,
+  tidyr,
+  tidyverse,
+  qwraps2,
+  xlsx
+)
+
 library(DBI)
 library(data.table)
 library(dtplyr)

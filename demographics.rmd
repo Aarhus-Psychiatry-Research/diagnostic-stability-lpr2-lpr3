@@ -17,7 +17,7 @@ library(stringr)
 library(tidyr)
 library(zoo)
 
-source("E:/Users/adminmanber/Desktop/FeasibilityMapper/utils.r")
+source(here("src", "utils.r"))
 source(here("src", "functions.r"))
 ```
 

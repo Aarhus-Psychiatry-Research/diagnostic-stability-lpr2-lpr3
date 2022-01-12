@@ -10,7 +10,7 @@ always_allow_html: yes
 ```{r}
 pacman::p_load(DBI, data.table, dtply, dplyr, lubridate, ggplot2, stringr, tidyr, ggalluvial, here)
 
-source("E:/Users/adminmanber/Desktop/FeasibilityMapper/utils.r")
+source(here("src", "utils.r"))
 source(here("src", "functions.r"))
 ```
 
@@ -85,13 +85,13 @@ allu_df_summarized <- df_alluvial_final %>%
 log_time()
 ```
 
-```{r}
+```{r fig.height=20, fig.width=20}
 source(here("src", "stability_connected_series_functions.r"))
 
-save_alluvial_plot(df = allu_df_summarized, 
+alluvial <- save_alluvial_plot(df = allu_df_summarized, 
                    filename = "allu_first_last_naive")
 
-log_time()
+alluvial
 ```
 
 ```{r}
