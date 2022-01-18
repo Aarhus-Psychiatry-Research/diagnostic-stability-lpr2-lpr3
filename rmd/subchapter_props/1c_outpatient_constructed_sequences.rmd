@@ -14,10 +14,11 @@ source(here::here("src", "functions.r"))
 
 df_constructed_outpatient_series <- df_outpatient_for_subchapter %>%
   keep_only_psych_visits() %>%
-  construct_sequences(
+  construct_sequence_ids(
     clinic_id_col = clinic,
     patient_id_col = dw_ek_borger,
-    date_col = datotid_start,
+    datetime_col = datotid_start,
+    datetime_col_name = "datotid_start",
     threshold_months = 0,
     verbose = TRUE
   ) %>% 

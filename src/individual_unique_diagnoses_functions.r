@@ -306,7 +306,7 @@ save_incident_per_active_plot <- function(df, filename, p_values = NULL, nudge_c
         ) +
         labs(
             x = "",
-            y = "Number of different diagnoses in quarter \n for patients with at least one contact in quarter",
+            y = "Number of different diagnoses in quarter \n per active treatment course",
             fill = "ICD-10 chapter"
         ) +
         scale_x_date

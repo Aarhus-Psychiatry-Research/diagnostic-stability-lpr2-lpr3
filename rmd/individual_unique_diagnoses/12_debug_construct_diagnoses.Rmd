@@ -1,5 +1,5 @@
 ---
-title: "debug_construct_sequences"
+title: "debug_construct_sequence_ids"
 output: html_document
 editor_options: 
   chunk_output_type: inline
@@ -12,10 +12,11 @@ source(here("src", "functions.r"))
 df_outpatient_preprocessed <- read_csv(here("csv", "df_outpatient_preprocessed.csv"))
 
 df_outpatient_constructed_3m_threshold <- df_outpatient_preprocessed %>%
-  construct_sequences(
+  construct_sequence_ids(
     clinic_id_col = shakafskode_besoeg,
     patient_id_col = dw_ek_borger,
-    date_col = datotid_start,
+    datetime_col = datotid_start,
+    datetime_col_name = "datotid_start",
     threshold_months = 3,
     verbose = TRUE
   )

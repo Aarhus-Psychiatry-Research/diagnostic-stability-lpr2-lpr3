@@ -51,7 +51,7 @@ Recode with most severe from sequence
 ```{r}
 source(here("src", "functions.r"))
 df_unique_with_diagnosis_as_most_severe_outpatient <- df_outpatient_for_subchapter %>%
-  recode_with_most_severe_diagnosis_for_sequence(dw_sk_kontakt, dw_sk_lpr3forloebsansvar, two_columns = TRUE) %>%
+  recode_with_most_severe_diagnosis_for_sequence(dw_sk_lpr3forloebsansvar) %>%
   add_column_n_with_diagnosis_in_period()
 ```
 
@@ -70,7 +70,7 @@ log_time()
 ```{r}
 source(here("src", "functions.r"))
 df_outpatient_for_subchapter_final_visit_only <- df_outpatient_for_subchapter %>%
-  recode_diagnoses_with_last_in_sequence(dw_sk_kontakt, dw_sk_lpr3forloebsansvar, two_columns = TRUE)
+  recode_diagnoses_with_last_in_sequence(dw_sk_lpr3forloebsansvar)
 
 df_unique_with_diagnosis_outpatient_final_visit_only <- df_outpatient_for_subchapter_final_visit_only %>%
   add_column_n_with_diagnosis_in_period()

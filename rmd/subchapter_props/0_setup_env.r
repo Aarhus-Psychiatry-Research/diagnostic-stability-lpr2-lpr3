@@ -1,6 +1,6 @@
 source(here("src", "utils.r"))
 
-pacman::p_load(DBI, dplyr, lubridate, ggplot2, stringr, tidyr, zoo, tidyverse)
+pacman::p_load(DBI, dplyr, lubridate, ggplot2, stringr, tidyr, zoo, tidyverse, scales)
 options(lubridate.fasttime = TRUE)
 
 source(here("src", "utils.r"))

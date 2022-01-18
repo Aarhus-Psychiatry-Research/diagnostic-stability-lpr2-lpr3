@@ -196,18 +196,18 @@ log_time <- function() {
 #' @param clinic_id_col
 #' @param patient_id_col
 #' @param datetime_col_name A string representation of the name of the datetime_col. An unfortunate side_effect of using dplyr.
-#' @param time_threshold Number of months between visits to consider a new sequence
+#' @param threshold_months Number of months between visits to consider a new sequence. If false, don't do sequencing.
 #' 
 #'
 #' @return df_with_constructed_sequences
 
-construct_sequences <- function(
+construct_sequence_ids <- function(
                         df, 
                         clinic_id_col, 
                         patient_id_col, 
                         datetime_col, 
                         datetime_col_name,
-                        threshold_months = 0, 
+                        threshold_months = FALSE, 
                         verbose = TRUE) 
                        {
   
@@ -215,9 +215,11 @@ construct_sequences <- function(
 
   df <- df %>% mutate(no_threshold_constructed_id = paste0({{ patient_id_col }}, {{ clinic_id_col }}))
   
-  if (threshold_months == 0) {
+  if (threshold_months == FALSE) {
     df <- df %>%
       rename(constructed_id = no_threshold_constructed_id)
+
+    return(df)
   } else {
     MONTH_IN_SECONDS <- 30 * 24 * 60 * 60 ## Calculate seconds in a month to add to POSIXct.
     THRESHOLD_MONTHS_IN_SECONDS <- MONTH_IN_SECONDS * threshold_months
@@ -344,7 +346,7 @@ convert_to_sequences_for_incident_per_active <- function(df) {
     select(dw_ek_borger, date, constructed_id) %>% 
     convert_visits_to_sequences(sequence_id_col = constructed_id,
                                 date_col = date) %>% 
-    mutate(sequence_end_date = sequence_end_date + 90) %>%  ## Pad sequence_end_date with 3 months, to count as active if last visit is within three months
+    mutate(sequence_end_date = sequence_end_date) %>%  ## Pad sequence_end_date with 3 months, to count as active if last visit is within three months
     collapse_sequences_if_same_patient()
 }
 
@@ -357,11 +359,13 @@ convert_visits_to_sequences <- function(df_in, sequence_id_col, date_col) {
 }
 
 count_open_sequences_in_period <- function(df_in) {
-  dates = seq(min(df_in$sequence_start_date), max(df_in$sequence_end_date), by = "quarter")
+  dates <- seq(min(df_in$sequence_start_date), max(df_in$sequence_end_date), by = "quarter")
   
-  df_out = data.frame(stringsAsFactors = FALSE,
+  df_out <- data.frame(stringsAsFactors = FALSE,
                       date = dates,
-                      count = sapply(dates, function(x) sum(x >= df_in$sequence_start_date & x <= df_in$sequence_end_date)))
+                      open_sequences = sapply(dates, function(x) sum(x >= df_in$sequence_start_date & x <= df_in$sequence_end_date))) %>% 
+            rename(period = date) %>% 
+            as_tibble()
 }
 
 count_unique_diagnoses_in_period <- function(df) {

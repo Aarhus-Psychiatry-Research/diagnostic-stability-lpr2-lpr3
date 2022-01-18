@@ -16,10 +16,11 @@ editor_options:
 ### Construct sequences
 ```{r}
 df_outpatient_constructed_no_threshold <- df_outpatient_preprocessed %>%
-  construct_sequences(
+  construct_sequence_ids(
     clinic_id_col = shakafskode_besoeg,
     patient_id_col = dw_ek_borger,
-    date_col = datotid_start,
+    datetime_col = datotid_start,
+    datetime_col_name = "datotid_start",
     threshold_months = 0,
     verbose = TRUE
   )

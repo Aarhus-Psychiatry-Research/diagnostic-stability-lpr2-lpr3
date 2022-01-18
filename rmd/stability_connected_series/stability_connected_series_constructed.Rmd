@@ -16,28 +16,41 @@ source(here("src", "functions.r"))
 
 ## General data wrangling
 ```{r get-raw}
-df_raw <- get_fct("FOR_besoeg_fysiske_fremmoeder_inkl_2021")
+df_raw_outpatient <- get_fct("FOR_besoeg_fysiske_fremmoeder_inkl_2021") %>%
+  clean_sql_import()
 
-df_preprocessed <- df_raw %>% 
-  clean_sql_import() %>% 
-  filter(as.Date(datotid_start) < ymd("2021-06-01"))
+df_outpatient_preprocessed <- df_raw_outpatient %>%
+  mutate(no_threshold_constructed_id = paste0(dw_ek_borger, shakafskode_besoeg)) %>%
+  keep_only_psych_visits() %>%
+  select(
+    dw_ek_borger,
+    datotid_start,
+    adiagnosekode,
+    ambbesoeg,
+    dw_sk_lpr3forloebsansvar,
+    dw_sk_kontakt,
+    shakafskode_besoeg,
+    no_threshold_constructed_id
+  ) %>%
+  add_LPR23_quarter_column() %>%
+  filter(period > ymd("2012-05-01")) %>% 
+  filter(period < ymd("2021-06-01"))
 ```
 
 ## No threshold
 ### Data wrangling
 ```{r construct-no-threshold}
-df_constructed_no_threshold <- df_preprocessed %>%
+df_constructed_no_threshold <- df_outpatient_preprocessed %>%
   keep_only_psych_visits() %>%
   mutate(adiagnosekode = substring(adiagnosekode, 1, 2)) %>%
-  construct_sequences(
+  construct_sequence_ids(
     clinic_id_col = shakafskode_besoeg,
     patient_id_col = dw_ek_borger,
-    date_col = datotid_start,
+    datetime_col = datotid_start,
+    datetime_col_name = "datotid_start",
     threshold_months = 0,
     verbose = TRUE
   )
-
-log_time()
 ```
 
 ```{r}

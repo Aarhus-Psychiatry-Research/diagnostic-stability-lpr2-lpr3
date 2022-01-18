@@ -1,0 +1,187 @@
+# Generate records with sequence IDs (cached in .csv below)
+## 3m threshold
+```{r}
+df_outpatient_constructed_no_threshold <- df_outpatient_preprocessed %>%
+  construct_sequences(
+    clinic_id_col = shakafskode_besoeg,
+    patient_id_col = dw_ek_borger,
+    datetime_col = datotid_start,
+    datetime_col_name = "datotid_start",
+    threshold_months = 0,
+    verbose = TRUE
+  )
+
+write_csv(df_outpatient_constructed_no_threshold, here("csv", "df_outpatient_constructed_no_threshold.csv"))
+```
+
+```{r}
+df_outpatient_constructed_no_threshold <- read_csv(here("csv", "df_outpatient_constructed_no_threshold.csv"))
+```
+
+```{r}
+df_outpatient_constructed_no_threshold_most_severe <- df_outpatient_constructed_no_threshold %>% 
+  recode_with_most_severe_diagnosis_for_sequence(constructed_id) %>% 
+  write_csv(here("csv", "df_outpatient_constructed_no_threshold_most_severe.csv"))
+  
+```
+
+```{r}
+df_outpatient_constructed_no_threshold_last_visit <- df_outpatient_constructed_no_threshold %>% 
+  recode_diagnoses_with_last_in_sequence(constructed_id) %>% 
+  write_csv(here("csv", "df_outpatient_constructed_no_threshold_final_visit.csv"))
+```
+
+
+
+
+# Open sequences in each period 
+```{r}
+df_sequenced_default <- df_outpatient_constructed_no_threshold %>%
+  convert_to_sequences_for_incident_per_active()
+```
+
+```{r}
+df_open_sequences_in_period <- df_sequenced_default %>% 
+  count_open_sequences_in_period()
+```
+
+
+
+
+# Default
+## Convert to sequences
+```{r}
+source(here("src", "functions.r"))
+```
+
+## Unique diagnoses in each period 
+```{r}
+df_unique_in_period <- df_outpatient_preprocessed %>% 
+  count_unique_diagnoses_in_period()
+```
+
+## Join and calculate diagnoses per open sequence
+```{r}
+df_per_patient <- join_and_calculate_diagnoses_per_open_sequence(
+  df_open_sequences_in_period,
+  df_unique_in_period
+)
+```
+
+# Most severe
+```{r}
+df_outpatient_constructed_no_threshold_most_severe <- read_csv(here("csv", "df_outpatient_constructed_no_threshold_most_severe.csv"))
+
+```
+
+## Convert to sequences
+```{r}
+source(here("src", "functions.r"))
+
+df_sequenced_most_severe <- df_outpatient_constructed_no_threshold_most_severe %>%
+  convert_to_sequences_for_incident_per_active()
+```
+
+## Unique diagnoses in each period 
+```{r}
+df_unique_in_period_no_threshold_most_severe <- df_outpatient_constructed_no_threshold_most_severe %>% 
+  count_unique_diagnoses_in_period()
+```
+
+## Join and calculate diagnoses per patient
+```{r}
+df_per_patient_most_severe <- join_and_calculate_diagnoses_per_open_sequence(
+  df_open_sequences_in_period,
+  df_unique_in_period_no_threshold_most_severe
+)
+```
+
+
+
+
+
+# Final diagnosis
+```{r}
+df_outpatient_constructed_no_threshold_final_visit <- read_csv(here("csv", "df_outpatient_constructed_no_threshold_final_visit.csv"))
+
+```
+
+## Convert to sequences
+```{r}
+source(here("src", "functions.r"))
+
+df_sequenced_final_visit <- df_outpatient_constructed_no_threshold_final_visit %>%
+  convert_to_sequences_for_incident_per_active()
+```
+
+## Unique diagnoses in each period 
+```{r}
+df_unique_in_period_no_threshold_final_visit <- df_outpatient_constructed_no_threshold_final_visit %>% 
+  count_unique_diagnoses_in_period()
+  
+```
+
+## Join and calculate diagnoses per patient
+```{r}
+df_per_patient_final_visit <- join_and_calculate_diagnoses_per_open_sequence(
+  df_open_sequences_in_period,
+  df_unique_in_period_no_threshold_final_visit
+)
+```
+
+
+
+
+
+# Plot
+
+## Plots with P-values
+### Mitigation, incident per active, 3m threshold
+```{r fig.height=5, fig.width=10}
+source(here("src", "individual_unique_diagnoses_functions.r"))
+source(here("src", "functions.r"))
+
+df_mitigation_constructed_incident_no_threshold_plot <- create_mitigation_df(
+  df_default = df_per_patient,
+  df_most_severe = df_per_patient_most_severe,
+  df_last_visit_only = df_per_patient_final_visit
+)
+
+write_csv(df_mitigation_constructed_incident_no_threshold_plot, here("csv", "df_mitigation_constructed_incident_no_threshold_plot.csv"))
+```
+
+```{r}
+df_mitigation_constructed_incident_no_threshold_plot <- read_csv(here("csv", "df_mitigation_constructed_incident_no_threshold_plot.csv"))
+```
+
+
+```{r}
+
+source(here("src", "individual_unique_diagnoses_functions.r"))
+mitigation_constructed_incident_no_threshold_plot <- save_incident_per_active_plot(
+  df = df_mitigation_constructed_incident_no_threshold_plot,
+  filename = "mitigation_constructed_incident_no_threshold",
+  exclusive_column_for_lpr2 = "Unmitigated"
+)
+
+mitigation_constructed_incident_no_threshold_plot
+```
+
+# Table
+```{r}
+df_unique_in_period 
+
+df_unique_in_period_no_threshold_final_visit
+
+df_unique_in_period_no_threshold_most_severe
+
+df_table <- df_open_sequences_in_period %>% 
+  right_join(df_unique_in_period) %>% 
+  rename(unique_diagnoses_default = unique_diagnoses_fxx) %>% 
+  right_join(df_unique_in_period_no_threshold_most_severe) %>% 
+  rename(unique_diagnoses_most_severe = unique_diagnoses_fxx) %>% 
+  right_join(df_unique_in_period_no_threshold_final_visit) %>% 
+  rename(unique_diagnoses_final_visit = unique_diagnoses_fxx)
+
+```
+

@@ -17,10 +17,7 @@ df_outpatient_most_severe <- df_outpatient_preprocessed %>%
 
 ```{r}
 df_outpatient_last_visit_only <- df_outpatient_preprocessed %>%
-  recode_diagnoses_with_last_in_sequence(dw_sk_kontakt,
-    dw_sk_lpr3forloebsansvar,
-    two_columns = TRUE
-  ) %>%
+  recode_diagnoses_with_last_in_sequence(dw_sk_lpr3forloebsansvar) %>%
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = FALSE)
 ```
 
