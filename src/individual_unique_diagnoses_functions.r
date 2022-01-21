@@ -17,6 +17,10 @@ y_limits <- scale_y_continuous(
     limits = c(1.0, 1.09)
 )
 
+incident_per_active_y_limits <- scale_y_continuous(
+    limits = c(0.6, 0.85)
+)
+
 source(here("src", "ggplot_defaults.r"))
 
 save_truncation_plot <- function(df, filename, p_values = NULL) {
@@ -29,19 +33,17 @@ save_truncation_plot <- function(df, filename, p_values = NULL) {
 
     gg <- ggplot(df, aes(
         x = as.Date(period),
-        y = mean,
+        y = estimate,
         ymin = lcl,
-        ymax = ucl
+        ymax = ucl,
+        shape = truncation_level,
+        color = truncation_level, 
+        fill = truncation_level
     )) +
         geom_linerange(
             alpha = 0.1
         ) +
-        geom_point(
-            aes(
-                shape = truncation,
-                color = truncation,
-            )
-        ) +
+        geom_point() +
         geom_vline(
             aes(
                 xintercept = ymd("2019-02-15")
@@ -72,9 +74,9 @@ save_truncation_plot <- function(df, filename, p_values = NULL) {
             color = "white",
             force = 0.2,
             mapping = aes(
-                fill = truncation,
+                fill = truncation_level,
                 segment.color = NA,
-                label = truncation
+                label = truncation_level
             )
         ) +
         theme(
@@ -87,10 +89,10 @@ save_truncation_plot <- function(df, filename, p_values = NULL) {
         ) +
         labs(
             x = "",
-            y = "Number of different diagnoses in quarter \n for patients with at least one contact in quarter"
+            y = "Number of different diagnoses in quarter \n per active treatment course"
         ) +
         scale_x_date +
-        y_limits
+        incident_per_active_y_limits
 
     if (!is.null(p_values)) {
         gg <- gg +
@@ -98,7 +100,7 @@ save_truncation_plot <- function(df, filename, p_values = NULL) {
                 data = p_values,
                 aes(
                     label = significant,
-                    color = truncation,
+                    color = truncation_level,
                     ymin = NULL,
                     ymax = NULL
                 ),
@@ -186,7 +188,7 @@ save_mitigation_strategy_plot <- function(df, filename, p_values = NULL, nudge_c
         ) +
         labs(
             x = "",
-            y = "Number of different diagnoses in quarter \n for patients with at least one contact in quarter",
+            y = "Number of different diagnoses in quarter \n per active treatment course",
             fill = "ICD-10 chapter"
         ) +
         scale_x_date +
@@ -309,13 +311,14 @@ save_incident_per_active_plot <- function(df, filename, p_values = NULL, nudge_c
             y = "Number of different diagnoses in quarter \n per active treatment course",
             fill = "ICD-10 chapter"
         ) +
-        scale_x_date
+        scale_x_date +
+        incident_per_active_y_limits
 
     if (!is.null(p_values)) {
         p_values <- p_values %>% 
-            mutate(mean_2 = if_else(origin == "Most severe", 
-                            mean_2 + nudge_constant, 
-                            mean_2))
+            mutate(estimate = if_else(origin == "Most severe", 
+                            estimate + nudge_constant, 
+                            estimate))
 
         gg <- gg +
             geom_text(

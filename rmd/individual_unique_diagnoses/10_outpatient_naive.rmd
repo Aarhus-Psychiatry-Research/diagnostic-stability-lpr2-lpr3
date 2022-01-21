@@ -22,7 +22,7 @@ df_outpatient_last_visit_only <- df_outpatient_preprocessed %>%
 ```
 
 ```{r}
-df_outpatient_unmitigated <- df_outpatient_preprocessed %>%
+df_outpatient_naive_summarised <- df_outpatient_preprocessed %>%
   gen_unique_diagnoses_pr_patient(confidence_intervals = TRUE, truncation_levels = TRUE)
 ```
 

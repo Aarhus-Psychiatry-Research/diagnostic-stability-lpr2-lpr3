@@ -1,8 +1,8 @@
 # Generate records with sequence IDs (cached in .csv below)
-## 3m threshold
+## No threshold
 ```{r}
 df_outpatient_constructed_no_threshold <- df_outpatient_preprocessed %>%
-  construct_sequences(
+  construct_sequence_ids(
     clinic_id_col = shakafskode_besoeg,
     patient_id_col = dw_ek_borger,
     datetime_col = datotid_start,
@@ -10,32 +10,23 @@ df_outpatient_constructed_no_threshold <- df_outpatient_preprocessed %>%
     threshold_months = 0,
     verbose = TRUE
   )
-
-write_csv(df_outpatient_constructed_no_threshold, here("csv", "df_outpatient_constructed_no_threshold.csv"))
-```
-
-```{r}
-df_outpatient_constructed_no_threshold <- read_csv(here("csv", "df_outpatient_constructed_no_threshold.csv"))
 ```
 
 ```{r}
 df_outpatient_constructed_no_threshold_most_severe <- df_outpatient_constructed_no_threshold %>% 
-  recode_with_most_severe_diagnosis_for_sequence(constructed_id) %>% 
-  write_csv(here("csv", "df_outpatient_constructed_no_threshold_most_severe.csv"))
+  recode_with_most_severe_diagnosis_for_sequence(constructed_id)
   
 ```
 
 ```{r}
 df_outpatient_constructed_no_threshold_last_visit <- df_outpatient_constructed_no_threshold %>% 
-  recode_diagnoses_with_last_in_sequence(constructed_id) %>% 
-  write_csv(here("csv", "df_outpatient_constructed_no_threshold_final_visit.csv"))
+  recode_diagnoses_with_last_in_sequence(constructed_id)
 ```
-
-
-
 
 # Open sequences in each period 
 ```{r}
+source(here("src", "functions.r"))
+
 df_sequenced_default <- df_outpatient_constructed_no_threshold %>%
   convert_to_sequences_for_incident_per_active()
 ```
@@ -45,6 +36,39 @@ df_open_sequences_in_period <- df_sequenced_default %>%
   count_open_sequences_in_period()
 ```
 
+# Truncation df
+```{r}
+df_truncation <- list()
+
+df_truncation$fx <- df_outpatient_preprocessed %>%
+  count_unique_diagnoses_in_period(number_of_chars=2)
+
+df_truncation$fxx <- df_outpatient_preprocessed %>%
+  count_unique_diagnoses_in_period(number_of_chars=3)
+
+df_truncation$fxxx <- df_outpatient_preprocessed %>%
+  count_unique_diagnoses_in_period(number_of_chars=4)
+
+df_truncation$fxxxx <- df_outpatient_preprocessed %>%
+  count_unique_diagnoses_in_period(number_of_chars=5)
+```
+
+```{r}
+df_truncation$estimates <- df_truncation$fx %>% 
+  right_join(df_truncation$fxx) %>% 
+  right_join(df_truncation$fxxx) %>% 
+  right_join(df_truncation$fxxxx) %>% 
+  right_join(df_open_sequences_in_period) %>% 
+  filter(period > "2013-01-01", period < "2021-04-02") %>% 
+  pivot_longer(cols = 2:5, names_to = "truncation_level", values_to = "count") %>% 
+  add_poisson_test_column(count_col = count, opportunities_col = open_sequences) %>% 
+  mutate(truncation_level = case_when(
+    truncation_level == "unique_diagnoses_2" ~ "FX",
+    truncation_level == "unique_diagnoses_3" ~ "FXX",
+    truncation_level == "unique_diagnoses_4" ~ "FXX.X",
+    truncation_level == "unique_diagnoses_5" ~ "FXX.XX"
+  ))
+```
 
 
 
@@ -57,7 +81,7 @@ source(here("src", "functions.r"))
 ## Unique diagnoses in each period 
 ```{r}
 df_unique_in_period <- df_outpatient_preprocessed %>% 
-  count_unique_diagnoses_in_period()
+  count_unique_diagnoses_in_period(number_of_chars=3) # Number_of_chars = 3 is equal to using F34
 ```
 
 ## Join and calculate diagnoses per open sequence
@@ -69,17 +93,9 @@ df_per_patient <- join_and_calculate_diagnoses_per_open_sequence(
 ```
 
 # Most severe
-```{r}
-df_outpatient_constructed_no_threshold_most_severe <- read_csv(here("csv", "df_outpatient_constructed_no_threshold_most_severe.csv"))
-
-```
-
 ## Convert to sequences
 ```{r}
 source(here("src", "functions.r"))
-
-df_sequenced_most_severe <- df_outpatient_constructed_no_threshold_most_severe %>%
-  convert_to_sequences_for_incident_per_active()
 ```
 
 ## Unique diagnoses in each period 
@@ -134,9 +150,9 @@ df_per_patient_final_visit <- join_and_calculate_diagnoses_per_open_sequence(
 
 
 # Plot
-
-## Plots with P-values
-### Mitigation, incident per active, 3m threshold
+## By mitigation
+### Data-wrangling
+#### Combine DFs
 ```{r fig.height=5, fig.width=10}
 source(here("src", "individual_unique_diagnoses_functions.r"))
 source(here("src", "functions.r"))
@@ -154,18 +170,105 @@ write_csv(df_mitigation_constructed_incident_no_threshold_plot, here("csv", "df_
 df_mitigation_constructed_incident_no_threshold_plot <- read_csv(here("csv", "df_mitigation_constructed_incident_no_threshold_plot.csv"))
 ```
 
-
+#### Add p-values
 ```{r}
+##### What to report?
+##### pdq(0,0,0) = linear model / z.test (no detrending)
+##### pdq(0,1,0) = liear model with differencing
+##### pdq(1,1,0) = autoregressive model with differencing
 
+p_load(
+  fable, 
+  tsibble, 
+  feasts, 
+  urca
+)
+
+df_mitigation_constructed_incident_no_threshold_plot_p_values <- df_mitigation_constructed_incident_no_threshold_plot %>%
+  mutate(lpr3 = if_else(period < "2019-02-03", 0, 1)) %>%
+  mutate(period = yearquarter(period)) %>% 
+  select(diag_per_active, period, origin, lpr3) %>%
+  as_tsibble(key = origin, index = period) %>%
+  model(arima = ARIMA(diag_per_active ~ 1 + lpr3 + pdq(0, 0, 0) + PDQ(0, 0, 0))) %>%
+  coef() %>%
+  select(!.model) %>%
+  filter(term == "lpr3") %>%
+  ungroup() %>%
+  mutate(
+    corrected_p = p.adjust(p.value, "fdr", n = 70), # 3 comparisons
+    significant = if_else(corrected_p < 0.05, "*", "")
+  )
+
+df_mitigation_constructed_incident_no_threshold_plot_p_values_2 <- df_mitigation_constructed_incident_no_threshold_plot %>%
+   filter(period == max(period)) %>%
+   select(period, diag_per_active, origin) %>%
+   left_join(df_mitigation_constructed_incident_no_threshold_plot_p_values, by = "origin")
+```
+
+### Generate plot
+```{r}
 source(here("src", "individual_unique_diagnoses_functions.r"))
+
 mitigation_constructed_incident_no_threshold_plot <- save_incident_per_active_plot(
   df = df_mitigation_constructed_incident_no_threshold_plot,
   filename = "mitigation_constructed_incident_no_threshold",
-  exclusive_column_for_lpr2 = "Unmitigated"
+  exclusive_column_for_lpr2 = "Unmitigated",
+  p_values = df_mitigation_constructed_incident_no_threshold_plot_p_values_2,
+  nudge_constant = 0.001
 )
 
 mitigation_constructed_incident_no_threshold_plot
 ```
+
+
+## By truncation 
+```{r}
+## What to report?
+## pdq(0,0,0) = linear model / z.test (no detrending)
+## pdq(0,1,0) = liear model with differencing
+## pdq(1,1,0) = autoregressive model with differencing
+
+## binary indicator for date in LPR2/LPR3
+df_truncation$p_values <- df_truncation$estimates %>%
+  mutate(lpr3 = if_else(period < "2019-02-03", 0, 1)) %>%
+  mutate(period = yearquarter(period)) %>%
+  as_tsibble(key = truncation_level, index = period) %>%
+  model(arima = ARIMA(estimate ~ 1 + lpr3 + pdq(1, 1, 0) + PDQ(0, 0, 0))) %>%
+  coef() %>%
+  select(!.model) %>%
+  filter(term == "lpr3") %>%
+  mutate(
+    corrected_p = p.adjust(p.value, "fdr", n = 70), # 4 comparisons
+    significant = if_else(corrected_p < 0.05, "*", "")
+  ) 
+
+
+df_truncation$p_values <- df_truncation$p_values %>% 
+  mutate(period = max(df_truncation$estimates$period))
+```
+
+```{r}
+source(here("src", "individual_unique_diagnoses_functions.r"))
+
+truncation_plot <- save_truncation_plot(
+  df = df_truncation$estimates,
+  filename ="examine_truncation_individual_unique_diagnoses_by_quarter_p_values",
+  p_values = df_truncation$p_values
+)
+
+truncation_plot
+```
+
+### Combined
+```{r}
+combined <- save_combined_plots(truncation_plot,
+                                mitigation_constructed_incident_no_threshold_plot,
+                                "figure_s4")
+
+combined
+```
+
+
 
 # Table
 ```{r}
@@ -182,6 +285,4 @@ df_table <- df_open_sequences_in_period %>%
   rename(unique_diagnoses_most_severe = unique_diagnoses_fxx) %>% 
   right_join(df_unique_in_period_no_threshold_final_visit) %>% 
   rename(unique_diagnoses_final_visit = unique_diagnoses_fxx)
-
 ```
-

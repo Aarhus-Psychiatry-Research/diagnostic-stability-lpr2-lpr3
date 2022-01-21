@@ -24,19 +24,30 @@ test_that("Basic utility functions", {
 
 test_that("convert_visits_to_sequences", {
 
-  df_convert_seq_to_visits_in <- data.frame(
-    stringsAsFactors = FALSE,
-    constructed_id = c("1660002P1","1660002P1","1660002P2","1660002P2","1660002P3"),
-              date = c("2016-01-14","2016-02-01","2016-02-29","2016-10-10","2017-01-27")
-  ) 
+  df_convert_seq_to_visits_in <- tibble::tribble(
+    ~constructed_id,        ~date,
+    "1",             "2016-01-14",
+    "1",             "2016-02-01",
+    "1",             "2017-02-01",
+    "2",             "2016-02-29",
+    "2",             "2016-10-10",
+    "3",             "2017-10-27",
+  ) %>% mutate(date = ymd(date))
 
   df_convert_seq_to_visits_out <- convert_visits_to_sequences(df_convert_seq_to_visits_in,
                                                               sequence_id_col = constructed_id,
                                                               date_col = date)
 
-  expect_equal(df_convert_seq_to_visits_out$constructed_id, c("1660002P1", "1660002P2", "1660002P3"))
-  expect_equal(df_convert_seq_to_visits_out$sequence_start_date, c("2016-01-14", "2016-02-29", "2017-01-27"))
-  expect_equal(df_convert_seq_to_visits_out$sequence_end_date, c("2016-02-01", "2016-10-10", "2017-01-27"))
+  expect_equal(df_convert_seq_to_visits_out$constructed_id, 
+               c("1", "2", "3"),
+               tolerance = 1e-4)
+  
+  expect_equal(df_convert_seq_to_visits_out$sequence_start_date, 
+               ymd(c("2016-01-14", "2016-02-29", "2017-10-27")),
+               tolerance = 1e-4)
+  
+  expect_equal(df_convert_seq_to_visits_out$sequence_end_date, 
+               ymd(c("2017-02-01", "2016-10-10", "2017-10-27")))
 
 })
 
@@ -55,8 +66,8 @@ test_that("convert_visits_to_sequences", {
 
   df_c_o <- count_open_sequences_in_period(df_count_in)
 
-  expect_equal(df_c_o$date, ymd(c("2016-01-14","2016-04-14","2016-07-14", "2016-10-14","2017-01-14")))
-  expect_equal(df_c_o$count, c(1, 3, 3, 1, 2))
+  expect_equal(df_c_o$period, ymd(c("2016-01-14","2016-04-14","2016-07-14", "2016-10-14","2017-01-14")))
+  expect_equal(df_c_o$open_sequences, c(1, 3, 3, 1, 2))
 
 })
 
@@ -74,8 +85,12 @@ test_that("Collapse sequences if overlapping", {
   collapse_sequences_if_same_patient()
 
 
-  expect_equal(df_test_collapse_sequences$dw_ek_borger, c("1660002P1", "1660002P1", "1660002P4", "1660002P5"))
-  expect_equal(df_test_collapse_sequences$sequence_start_date, ymd(c("2016-01-14","2018-02-10","2016-01-14","2017-01-12")))
+  expect_equal(df_test_collapse_sequences$dw_ek_borger, 
+               c("1660002P1", "1660002P1", "1660002P4", "1660002P5"),
+               tolerance = 1e-4)
+  expect_equal(df_test_collapse_sequences$sequence_start_date, 
+               ymd(c("2016-01-14","2018-02-10","2016-01-14","2017-01-12")),
+                   tolerance = 1e-4)
 })
 
 
@@ -351,3 +366,13 @@ test_that("construct_sequence_ids without threshold_months", {
     fixed = TRUE)
   ## Finished testing 'test_dfs$constructed_sequences'                        ####
 })
+
+df_test_convert_to_sequences <- tibble::tribble(
+  ~dw_ek_borger, ~sequence_start_date, ~sequence_end_date,
+  1,         "2014-12-19",       "2015-12-01",
+  1,         "2016-01-14",       "2021-04-20",
+  1,         "2013-07-11",       "2018-01-10",
+  1,         "2013-07-02",       "2014-01-20",
+  2,         "2016-06-20",       "2018-02-27"
+)
+

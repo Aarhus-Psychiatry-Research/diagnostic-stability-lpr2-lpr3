@@ -346,7 +346,7 @@ convert_to_sequences_for_incident_per_active <- function(df) {
     select(dw_ek_borger, date, constructed_id) %>% 
     convert_visits_to_sequences(sequence_id_col = constructed_id,
                                 date_col = date) %>% 
-    mutate(sequence_end_date = sequence_end_date) %>%  ## Pad sequence_end_date with 3 months, to count as active if last visit is within three months
+    mutate(sequence_end_date = sequence_end_date + 180) %>%  ## Pad sequence_end_date with 3 months, to count as active if last visit is within three months
     collapse_sequences_if_same_patient()
 }
 
@@ -368,11 +368,19 @@ count_open_sequences_in_period <- function(df_in) {
             as_tibble()
 }
 
-count_unique_diagnoses_in_period <- function(df) {
+count_unique_diagnoses_in_period <- function(df, number_of_chars=3) {
   df_out <- df %>% 
     mutate(period = as.Date(period)) %>% 
     group_by(period) %>% 
-    summarise(unique_diagnoses_fxx = n_distinct(substr(adiagnosekode, 1, 3), dw_ek_borger))
+    summarise("unique_diagnoses_{{number_of_chars}}" := n_distinct(substr(adiagnosekode, 1, number_of_chars), dw_ek_borger))
+}
+
+add_poisson_test_column <- function(df, count_col, opportunities_col) {
+  df_out <- df %>% 
+    rowwise() %>% 
+    mutate("estimate" := poisson.test({{count_col}}, {{opportunities_col}})$estimate,
+           "lcl" := poisson.test({{count_col}}, {{opportunities_col}})$conf.int[1],
+           "ucl" := poisson.test({{count_col}}, {{opportunities_col}})$conf.int[2])
 }
 
 join_and_calculate_diagnoses_per_open_sequence <- function(df1, df2) {
@@ -383,9 +391,9 @@ join_and_calculate_diagnoses_per_open_sequence <- function(df1, df2) {
   
   df_out <- df_out %>% 
     rowwise() %>% 
-    mutate(diag_per_active = poisson.test(unique_diagnoses_fxx, open_sequences)$estimate,
-           lcl = poisson.test(unique_diagnoses_fxx, open_sequences)$conf.int[1],
-           ucl = poisson.test(unique_diagnoses_fxx, open_sequences)$conf.int[2])
+    mutate(diag_per_active = poisson.test(unique_diagnoses_3, open_sequences)$estimate,
+           lcl = poisson.test(unique_diagnoses_3, open_sequences)$conf.int[1],
+           ucl = poisson.test(unique_diagnoses_3, open_sequences)$conf.int[2])
 }
 
 collapse_sequences_if_same_patient <- function(df) {

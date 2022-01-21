@@ -25,7 +25,5 @@ df_outpatient_preprocessed <- df_raw_outpatient %>%
   add_LPR23_quarter_column() %>%
   filter(period > ymd("2012-05-01")) %>% 
   filter(period < ymd("2021-06-01"))
-
-df_outpatient_preprocessed <- write_csv(df_outpatient_preprocessed, here("csv", "df_outpatient_preprocessed.csv"))
 ```
 
