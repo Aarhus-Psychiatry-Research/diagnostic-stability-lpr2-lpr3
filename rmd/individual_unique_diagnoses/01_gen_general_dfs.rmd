@@ -9,7 +9,7 @@ df_raw_lpr3 <- get_fct("FOR_LPR3kontakter_psyk_somatik_inkl_2021") %>%
 df_raw_lpr2_inpatient <- get_fct("FOR_indlaeggelser_psyk_somatik_LPR2_inkl_2021") %>%
   clean_sql_import()
 
-df_outpatient_preprocessed <- df_raw_outpatient %>%
+df_outpatient_visits_preprocessed <- df_raw_outpatient %>%
   mutate(patient_clinic_id = paste0(dw_ek_borger, shakafskode_besoeg)) %>%
   keep_only_psych_visits() %>%
   select(
@@ -23,7 +23,7 @@ df_outpatient_preprocessed <- df_raw_outpatient %>%
     patient_clinic_id
   ) %>%
   add_LPR23_quarter_column() %>%
-  filter(period > ymd("2012-05-01")) %>% 
+  filter(period > ymd("2012-05-01")) %>%
   filter(period < ymd("2021-06-01"))
 ```
 

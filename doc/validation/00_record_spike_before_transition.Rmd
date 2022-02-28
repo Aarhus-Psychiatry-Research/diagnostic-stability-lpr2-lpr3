@@ -14,15 +14,15 @@ conn <- DBI::dbConnect(
   Trusted_Connection = "TRUE"
 )
 
-df_raw_outpatient <- dbGetQuery(conn, "SELECT * FROM [fct].FOR_besoeg_fysiske_fremmoeder") %>% 
+df_raw_outpatient <- dbGetQuery(conn, "SELECT * FROM [fct].FOR_besoeg_fysiske_fremmoeder") %>%
   rename_with(tolower)
 ```
 
 
-Examine whether there is a spike in new records right before the LPR2->LPR3 transition. Could explain the increase pre-transition we see in the figures.
+Examine whether there is a spike in new records right before the LPR2->dnpr3 transition. Could explain the increase pre-transition we see in the figures.
 
 ```{r}
-df_examine_record_spike <- df_raw_outpatient %>% 
+df_examine_record_spike <- df_raw_outpatient %>%
   filter(datotid_start > ymd("2019-01-01"))
 
 hist(as.Date(df_examine_record_spike$datotid_start), "days", freq = TRUE)

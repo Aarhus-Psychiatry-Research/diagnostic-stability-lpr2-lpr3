@@ -1,7 +1,7 @@
 # Generate records with sequence IDs (cached in .csv below)
 ## No threshold
 ```{r}
-df_outpatient_constructed_no_threshold <- df_outpatient_preprocessed %>%
+df_out_visits <- df_outpatient_visits_preprocessed %>%
   add_patient_and_clinic_uid(
     clinic_id_col = shakafskode_besoeg,
     patient_id_col = dw_ek_borger
@@ -9,26 +9,25 @@ df_outpatient_constructed_no_threshold <- df_outpatient_preprocessed %>%
 ```
 
 ```{r}
-df_outpatient_constructed_no_threshold_most_severe <- df_outpatient_constructed_no_threshold %>% 
-  relabel_diag_most_severe(constructed_id)
-  
+df_out_visits_relabel_as_most_severe <- df_out_visits %>%
+  relabel_diag_most_severe(patient_clinic_id)
 ```
 
 ```{r}
-df_outpatient_constructed_no_threshold_last_visit <- df_outpatient_constructed_no_threshold %>% 
-  recode_diagnoses_with_last_in_sequence(constructed_id)
+df_out_visits_relabel_as_last_diag <- df_out_visits %>%
+  recode_diagnoses_with_last_in_sequence(patient_clinic_id)
 ```
 
 # Open sequences in each period 
 ```{r}
 source(here("src", "functions.r"))
 
-df_sequenced_default <- df_outpatient_constructed_no_threshold %>%
-  convert_to_sequences_for_incident_per_active()
+df_out_courses <- df_out_visits %>%
+  visits_to_processed_treatment_courses()
 ```
 
 ```{r}
-df_open_sequences_in_period <- df_sequenced_default %>% 
+df_open_sequences_in_period <- df_out_courses %>%
   count_open_sequences_in_period()
 ```
 
@@ -36,28 +35,28 @@ df_open_sequences_in_period <- df_sequenced_default %>%
 ```{r}
 df_truncation <- list()
 
-df_truncation$fx <- df_outpatient_preprocessed %>%
-  count_unique_diagnoses_in_period(number_of_chars=2)
+df_truncation$fx <- df_outpatient_visits_preprocessed %>%
+  count_unique_diagnoses_in_period(number_of_chars = 2)
 
-df_truncation$fxx <- df_outpatient_preprocessed %>%
-  count_unique_diagnoses_in_period(number_of_chars=3)
+df_truncation$fxx <- df_outpatient_visits_preprocessed %>%
+  count_unique_diagnoses_in_period(number_of_chars = 3)
 
-df_truncation$fxxx <- df_outpatient_preprocessed %>%
-  count_unique_diagnoses_in_period(number_of_chars=4)
+df_truncation$fxxx <- df_outpatient_visits_preprocessed %>%
+  count_unique_diagnoses_in_period(number_of_chars = 4)
 
-df_truncation$fxxxx <- df_outpatient_preprocessed %>%
-  count_unique_diagnoses_in_period(number_of_chars=5)
+df_truncation$fxxxx <- df_outpatient_visits_preprocessed %>%
+  count_unique_diagnoses_in_period(number_of_chars = 5)
 ```
 
 ```{r}
-df_truncation$estimates <- df_truncation$fx %>% 
-  right_join(df_truncation$fxx) %>% 
-  right_join(df_truncation$fxxx) %>% 
-  right_join(df_truncation$fxxxx) %>% 
-  right_join(df_open_sequences_in_period) %>% 
-  filter(period > "2013-01-01", period < "2021-04-02") %>% 
-  pivot_longer(cols = 2:5, names_to = "truncation_level", values_to = "count") %>% 
-  add_poisson_test_column(count_col = count, opportunities_col = open_sequences) %>% 
+df_truncation$estimates <- df_truncation$fx %>%
+  right_join(df_truncation$fxx) %>%
+  right_join(df_truncation$fxxx) %>%
+  right_join(df_truncation$fxxxx) %>%
+  right_join(df_open_sequences_in_period) %>%
+  filter(period > "2013-01-01", period < "2021-04-02") %>%
+  pivot_longer(cols = 2:5, names_to = "truncation_level", values_to = "count") %>%
+  add_poisson_test_column(count_col = count, opportunities_col = open_sequences) %>%
   mutate(truncation_level = case_when(
     truncation_level == "unique_diagnoses_2" ~ "FX",
     truncation_level == "unique_diagnoses_3" ~ "FXX",
@@ -76,15 +75,15 @@ source(here("src", "functions.r"))
 
 ## Unique diagnoses in each period 
 ```{r}
-df_unique_in_period <- df_outpatient_preprocessed %>% 
-  count_unique_diagnoses_in_period(number_of_chars=3) # Number_of_chars = 3 is equal to using F34
+df_n_patient_diagnoses_by_quarter <- df_outpatient_visits_preprocessed %>%
+  count_unique_diagnoses_in_period(number_of_chars = 3) # Number_of_chars = 3 is equal to using F34
 ```
 
 ## Join and calculate diagnoses per open sequence
 ```{r}
-df_per_patient <- join_and_calculate_diagnoses_per_open_sequence(
+df_n_diag_per_patient <- join_and_calculate_diagnoses_per_open_sequence(
   df_open_sequences_in_period,
-  df_unique_in_period
+  df_n_patient_diagnoses_by_quarter
 )
 ```
 
@@ -96,54 +95,39 @@ source(here("src", "functions.r"))
 
 ## Unique diagnoses in each period 
 ```{r}
-df_unique_in_period_no_threshold_most_severe <- df_outpatient_constructed_no_threshold_most_severe %>% 
+df_n_patient_diagnoses_by_quarter_most_severe <- df_out_visits_relabel_as_most_severe %>%
   count_unique_diagnoses_in_period()
 ```
 
 ## Join and calculate diagnoses per patient
 ```{r}
-df_per_patient_most_severe <- join_and_calculate_diagnoses_per_open_sequence(
+df_n_diag_per_patient_most_severe <- join_and_calculate_diagnoses_per_open_sequence(
   df_open_sequences_in_period,
-  df_unique_in_period_no_threshold_most_severe
+  df_n_patient_diagnoses_by_quarter_most_severe
 )
 ```
 
-
-
-
-
 # Final diagnosis
 ```{r}
-df_outpatient_constructed_no_threshold_final_visit <- read_csv(here("csv", "df_outpatient_constructed_no_threshold_final_visit.csv"))
-
+df_out_visits_final_visit <- read_csv(here("csv", "df_out_visits_final_visit.csv"))
 ```
 
 ## Convert to sequences
 ```{r}
 source(here("src", "functions.r"))
 
-df_sequenced_final_visit <- df_outpatient_constructed_no_threshold_final_visit %>%
-  convert_to_sequences_for_incident_per_active()
-```
-
-## Unique diagnoses in each period 
-```{r}
-df_unique_in_period_no_threshold_final_visit <- df_outpatient_constructed_no_threshold_final_visit %>% 
+df_n_patient_diagnoses_by_quarter_final_visit <- df_out_visits_final_visit %>%
+  visits_to_processed_treatment_courses() %>%
   count_unique_diagnoses_in_period()
-  
 ```
 
 ## Join and calculate diagnoses per patient
 ```{r}
-df_per_patient_final_visit <- join_and_calculate_diagnoses_per_open_sequence(
+df_n_diag_per_patient_final_visit <- join_and_calculate_diagnoses_per_open_sequence(
   df_open_sequences_in_period,
-  df_unique_in_period_no_threshold_final_visit
+  df_n_patient_diagnoses_by_quarter_no_threshold_final_visit
 )
 ```
-
-
-
-
 
 # Plot
 ## By mitigation
@@ -153,17 +137,17 @@ df_per_patient_final_visit <- join_and_calculate_diagnoses_per_open_sequence(
 source(here("src", "individual_unique_diagnoses_functions.r"))
 source(here("src", "functions.r"))
 
-df_mitigation_constructed_incident_no_threshold_plot <- create_mitigation_df(
-  df_default = df_per_patient,
-  df_most_severe = df_per_patient_most_severe,
-  df_last_visit_only = df_per_patient_final_visit
+df_plot_mitigation_same_clinic <- create_mitigation_df(
+  df_default = df_n_diag_per_patient,
+  df_most_severe = df_n_diag_per_patient_most_severe,
+  df_last_visit_only = df_n_diag_per_patient_final_visit
 )
 
-write_csv(df_mitigation_constructed_incident_no_threshold_plot, here("csv", "df_mitigation_constructed_incident_no_threshold_plot.csv"))
+write_csv(df_plot_mitigation_same_clinic, here("csv", "df_plot_mitigation_same_clinic.csv"))
 ```
 
 ```{r}
-df_mitigation_constructed_incident_no_threshold_plot <- read_csv(here("csv", "df_mitigation_constructed_incident_no_threshold_plot.csv"))
+df_plot_mitigation_same_clinic <- read_csv(here("csv", "df_plot_mitigation_same_clinic.csv"))
 ```
 
 #### Add p-values
@@ -174,15 +158,15 @@ df_mitigation_constructed_incident_no_threshold_plot <- read_csv(here("csv", "df
 ##### pdq(1,1,0) = autoregressive model with differencing
 
 p_load(
-  fable, 
-  tsibble, 
-  feasts, 
+  fable,
+  tsibble,
+  feasts,
   urca
 )
 
-df_mitigation_constructed_incident_no_threshold_plot_p_values <- df_mitigation_constructed_incident_no_threshold_plot %>%
+df_plot_mitigation_same_clinic_p_values <- df_plot_mitigation_same_clinic %>%
   mutate(lpr3 = if_else(period < "2019-02-03", 0, 1)) %>%
-  mutate(period = yearquarter(period)) %>% 
+  mutate(period = yearquarter(period)) %>%
   select(diag_per_active, period, origin, lpr3) %>%
   as_tsibble(key = origin, index = period) %>%
   model(arima = ARIMA(diag_per_active ~ 1 + lpr3 + pdq(0, 0, 0) + PDQ(0, 0, 0))) %>%
@@ -193,25 +177,23 @@ df_mitigation_constructed_incident_no_threshold_plot_p_values <- df_mitigation_c
   mutate(
     corrected_p = p.adjust(p.value, "fdr", n = 70), # 3 comparisons
     significant = if_else(corrected_p < 0.05, "*", "")
-  )
-
-df_mitigation_constructed_incident_no_threshold_plot_p_values_2 <- df_mitigation_constructed_incident_no_threshold_plot %>%
-   filter(period == max(period)) %>%
-   select(period, diag_per_active, origin) %>%
-   left_join(df_mitigation_constructed_incident_no_threshold_plot_p_values, by = "origin")
+  ) %>%
+  filter(period == max(period)) %>%
+  select(period, diag_per_active, origin) %>%
+  left_join(df_plot_mitigation_same_clinic_p_values, by = "origin")
 ```
 
 ### Calculate SDs
 ```{r}
-df_sds <- df_mitigation_constructed_incident_no_threshold_plot %>% 
+df_sds <- df_plot_mitigation_same_clinic %>%
   mutate(lpr3 = if_else(period < "2019-02-03", 0, 1))
 
-df_before <- df_sds %>% 
-  filter(lpr3 == 0) %>% 
+df_before <- df_sds %>%
+  filter(lpr3 == 0) %>%
   filter(origin == "Unmitigated")
 
-df_after <- df_sds %>% 
-  filter(lpr3 == 1) %>% 
+df_after <- df_sds %>%
+  filter(lpr3 == 1) %>%
   filter(origin == "Unmitigated")
 
 sd(df_before$diag_per_active)
@@ -224,10 +206,10 @@ sd(df_after$diag_per_active)
 source(here("src", "individual_unique_diagnoses_functions.r"))
 
 mitigation_constructed_incident_no_threshold_plot <- save_incident_per_active_plot(
-  df = df_mitigation_constructed_incident_no_threshold_plot,
+  df = df_plot_mitigation_same_clinic,
   filename = "mitigation_constructed_incident_no_threshold",
   exclusive_column_for_lpr2 = "Unmitigated",
-  p_values = df_mitigation_constructed_incident_no_threshold_plot_p_values_2,
+  p_values = df_plot_mitigation_same_clinic_p_values,
   nudge_constant = 0.001
 )
 
@@ -254,10 +236,10 @@ df_truncation$p_values <- df_truncation$estimates %>%
   mutate(
     corrected_p = p.adjust(p.value, "fdr", n = 70), # 4 comparisons
     significant = if_else(corrected_p < 0.05, "*", "")
-  ) 
+  )
 
 
-df_truncation$p_values <- df_truncation$p_values %>% 
+df_truncation$p_values <- df_truncation$p_values %>%
   mutate(period = max(df_truncation$estimates$period))
 ```
 
@@ -266,7 +248,7 @@ source(here("src", "individual_unique_diagnoses_functions.r"))
 
 truncation_plot <- save_truncation_plot(
   df = df_truncation$estimates,
-  filename ="examine_truncation_individual_unique_diagnoses_by_quarter_p_values",
+  filename = "examine_truncation_individual_unique_diagnoses_by_quarter_p_values",
   p_values = df_truncation$p_values
 )
 
@@ -275,9 +257,11 @@ truncation_plot
 
 ### Combined
 ```{r}
-combined <- save_combined_plots(truncation_plot,
-                                mitigation_constructed_incident_no_threshold_plot,
-                                "figure_s4")
+combined <- save_combined_plots(
+  truncation_plot,
+  mitigation_constructed_incident_no_threshold_plot,
+  "figure_s4"
+)
 
 combined
 ```
@@ -286,18 +270,18 @@ combined
 
 # Table
 ```{r}
-df_unique_in_period 
+df_n_patient_diagnoses_by_quarter
 
-df_unique_in_period_no_threshold_final_visit
+df_n_patient_diagnoses_by_quarter_no_threshold_final_visit
 
-df_unique_in_period_no_threshold_most_severe
+df_n_patient_diagnoses_by_quarter_most_severe
 
-df_table <- df_open_sequences_in_period %>% 
-  right_join(df_unique_in_period) %>% 
-  rename(unique_diagnoses_default = unique_diagnoses_3) %>% 
-  right_join(df_unique_in_period_no_threshold_most_severe) %>% 
-  rename(unique_diagnoses_most_severe = unique_diagnoses_3) %>% 
-  right_join(df_unique_in_period_no_threshold_final_visit) %>% 
-  rename(unique_diagnoses_final_visit = unique_diagnoses_3) %>% 
-  mutate(ratio = unique_diagnoses_default/open_sequences)
+df_table <- df_open_sequences_in_period %>%
+  right_join(df_n_patient_diagnoses_by_quarter) %>%
+  rename(unique_diagnoses_default = unique_diagnoses_3) %>%
+  right_join(df_n_patient_diagnoses_by_quarter_most_severe) %>%
+  rename(unique_diagnoses_most_severe = unique_diagnoses_3) %>%
+  right_join(df_n_patient_diagnoses_by_quarter_no_threshold_final_visit) %>%
+  rename(unique_diagnoses_final_visit = unique_diagnoses_3) %>%
+  mutate(ratio = unique_diagnoses_default / open_sequences)
 ```

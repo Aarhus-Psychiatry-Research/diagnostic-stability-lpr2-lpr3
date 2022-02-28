@@ -4,30 +4,29 @@ source(here("src", "functions.r"))
 ```
 
 ```{r}
-df_out_visits_seq_responsibility_id <- df_outpatient_preprocessed %>%
-  mutate(constructed_id = paste0(dw_ek_borger, dw_sk_lpr3forloebsansvar, dw_sk_kontakt))
+df_out_visits <- df_outpatient_visits_preprocessed %>%
+  mutate(patient_clinic_id = paste0(dw_ek_borger, dw_sk_lpr3forloebsansvar, dw_sk_kontakt))
 ```
 
 
 ```{r}
-df_out_visits_seq_responsibility_id_most_severe <- df_out_visits_seq_responsibility_id %>% 
-  relabel_diag_most_severe(constructed_id)
-  
+df_out_visits_relabel_as_most_severe <- df_out_visits %>%
+  relabel_diag_most_severe(patient_clinic_id)
 ```
 
 ```{r}
-df_out_visits_seq_responsibility_id_last_visit <- df_out_visits_seq_responsibility_id %>% 
-  recode_diagnoses_with_last_in_sequence(constructed_id)
+df_out_visits_relabel_as_last_diag <- df_out_visits %>%
+  recode_diagnoses_with_last_in_sequence(patient_clinic_id)
 ```
 
 ```{r}
-df_out_sequences_is_responsibility_id <- df_out_visits_seq_responsibility_id %>% 
-  convert_to_sequences_for_incident_per_active()
+df_out_courses <- df_out_visits %>%
+  visits_to_processed_treatment_courses()
 ```
 
 # Open sequences in each period 
 ```{r}
-df_open_sequences_in_period <- df_out_sequences_is_responsibility_id %>% 
+df_n_open_courses_by_period <- df_out_courses %>%
   count_open_sequences_in_period()
 ```
 
@@ -35,28 +34,28 @@ df_open_sequences_in_period <- df_out_sequences_is_responsibility_id %>%
 ```{r}
 df_truncation <- list()
 
-df_truncation$fx <- df_outpatient_preprocessed %>%
-  count_unique_diagnoses_in_period(number_of_chars=2)
+df_truncation$fx <- df_outpatient_visits_preprocessed %>%
+  count_unique_diagnoses_in_period(number_of_chars = 2)
 
-df_truncation$fxx <- df_outpatient_preprocessed %>%
-  count_unique_diagnoses_in_period(number_of_chars=3)
+df_truncation$fxx <- df_outpatient_visits_preprocessed %>%
+  count_unique_diagnoses_in_period(number_of_chars = 3)
 
-df_truncation$fxxx <- df_outpatient_preprocessed %>%
-  count_unique_diagnoses_in_period(number_of_chars=4)
+df_truncation$fxxx <- df_outpatient_visits_preprocessed %>%
+  count_unique_diagnoses_in_period(number_of_chars = 4)
 
-df_truncation$fxxxx <- df_outpatient_preprocessed %>%
-  count_unique_diagnoses_in_period(number_of_chars=5)
+df_truncation$fxxxx <- df_outpatient_visits_preprocessed %>%
+  count_unique_diagnoses_in_period(number_of_chars = 5)
 ```
 
 ```{r}
-df_truncation$estimates <- df_truncation$fx %>% 
-  right_join(df_truncation$fxx) %>% 
-  right_join(df_truncation$fxxx) %>% 
-  right_join(df_truncation$fxxxx) %>% 
-  right_join(df_open_sequences_in_period) %>% 
-  filter(period > "2013-01-01", period < "2021-04-02") %>% 
-  pivot_longer(cols = 2:5, names_to = "truncation_level", values_to = "count") %>% 
-  add_poisson_test_column(count_col = count, opportunities_col = open_sequences) %>% 
+df_truncation$estimates <- df_truncation$fx %>%
+  right_join(df_truncation$fxx) %>%
+  right_join(df_truncation$fxxx) %>%
+  right_join(df_truncation$fxxxx) %>%
+  right_join(df_n_open_courses_by_period) %>%
+  filter(period > "2013-01-01", period < "2021-04-02") %>%
+  pivot_longer(cols = 2:5, names_to = "truncation_level", values_to = "count") %>%
+  add_poisson_test_column(count_col = count, opportunities_col = open_sequences) %>%
   mutate(truncation_level = case_when(
     truncation_level == "unique_diagnoses_2" ~ "FX",
     truncation_level == "unique_diagnoses_3" ~ "FXX",
@@ -75,15 +74,15 @@ source(here("src", "functions.r"))
 
 ## Unique diagnoses in each period 
 ```{r}
-df_unique_in_period <- df_outpatient_preprocessed %>% 
-  count_unique_diagnoses_in_period(number_of_chars=3) # Number_of_chars = 3 is equal to using F34
+df_n_patient_diagnoses_by_quarter <- df_outpatient_visits_preprocessed %>%
+  count_unique_diagnoses_in_period(number_of_chars = 3) # Number_of_chars = 3 is equal to using F34
 ```
 
 ## Join and calculate diagnoses per open sequence
 ```{r}
-df_per_patient <- join_and_calculate_diagnoses_per_open_sequence(
-  df_open_sequences_in_period,
-  df_unique_in_period
+df_n_diag_per_patient <- join_and_calculate_diagnoses_per_open_sequence(
+  df_n_open_courses_by_period,
+  df_n_patient_diagnoses_by_quarter
 )
 ```
 
@@ -95,15 +94,15 @@ source(here("src", "functions.r"))
 
 ## Unique diagnoses in each period 
 ```{r}
-df_unique_in_period_most_severe <- df_out_visits_seq_responsibility_id_most_severe %>% 
+df_n_patient_diagnoses_by_quarter_most_severe <- df_out_visits_relabel_as_most_severe %>%
   count_unique_diagnoses_in_period()
 ```
 
 ## Join and calculate diagnoses per patient
 ```{r}
-df_per_patient_most_severe <- join_and_calculate_diagnoses_per_open_sequence(
-  df_open_sequences_in_period,
-  df_unique_in_period_most_severe
+df_n_diag_per_patient_most_severe <- join_and_calculate_diagnoses_per_open_sequence(
+  df_n_open_courses_by_period,
+  df_n_patient_diagnoses_by_quarter_most_severe
 )
 ```
 
@@ -111,16 +110,16 @@ df_per_patient_most_severe <- join_and_calculate_diagnoses_per_open_sequence(
 # Final diagnosis
 ## Unique diagnoses in each period 
 ```{r}
-df_unique_in_period_final_visit <- df_out_visits_seq_responsibility_id_last_visit %>% 
+df_n_patient_diagnoses_by_quarter_final_visit <- df_out_visits_relabel_as_last_diag %>%
   count_unique_diagnoses_in_period()
-  
+
 ```
 
 ## Join and calculate diagnoses per patient
 ```{r}
-df_per_patient_final_visit <- join_and_calculate_diagnoses_per_open_sequence(
-  df_open_sequences_in_period,
-  df_unique_in_period_final_visit
+df_n_diag_per_patient_final_visit <- join_and_calculate_diagnoses_per_open_sequence(
+  df_n_open_courses_by_period,
+  df_n_patient_diagnoses_by_quarter_final_visit
 )
 ```
 
@@ -133,19 +132,19 @@ df_per_patient_final_visit <- join_and_calculate_diagnoses_per_open_sequence(
 source(here("src", "individual_unique_diagnoses_functions.r"))
 source(here("src", "functions.r"))
 
-df_mitigation_seq_responsibility_id_incident_plot <- create_mitigation_df(
-  df_default = df_per_patient,
-  df_most_severe = df_per_patient_most_severe,
-  df_last_visit_only = df_per_patient_final_visit
+df_plot_mitigation_seq_responsibility_id <- create_mitigation_df(
+  df_default = df_n_diag_per_patient,
+  df_most_severe = df_n_diag_per_patient_most_severe,
+  df_last_visit_only = df_n_diag_per_patient_final_visit
 ) %>% ungroup()
 
-df_mitigation_seq_responsibility_id_incident_plot <- write_csv(df_mitigation_seq_responsibility_id_incident_plot, here("csv", "df_mitigation_seq_responsibility_id_incident_plot"))
+df_plot_mitigation_seq_responsibility_id <- write_csv(df_plot_mitigation_seq_responsibility_id, here("csv", "df_plot_mitigation_seq_responsibility_id"))
 ```
 
 
 #### Add p-values
 ```{r}
-df_mitigation_seq_responsibility_id_incident_plot <- read_csv(here("csv", "df_mitigation_seq_responsibility_id_incident_plot"))
+df_plot_mitigation_seq_responsibility_id <- read_csv(here("csv", "df_plot_mitigation_seq_responsibility_id"))
 
 ##### What to report?
 ##### pdq(0,0,0) = linear model / z.test (no detrending)
@@ -153,15 +152,15 @@ df_mitigation_seq_responsibility_id_incident_plot <- read_csv(here("csv", "df_mi
 ##### pdq(1,1,0) = autoregressive model with differencing
 
 p_load(
-  fable, 
-  tsibble, 
-  feasts, 
+  fable,
+  tsibble,
+  feasts,
   urca
 )
 
-df_mitigation_seq_responsibility_id_incident_plot_p_values <- df_mitigation_seq_responsibility_id_incident_plot %>%
+df_plot_mitigation_seq_responsibility_id_p_values <- df_plot_mitigation_seq_responsibility_id %>%
   mutate(lpr3 = if_else(period < "2019-02-03", 0, 1)) %>%
-  mutate(period = yearquarter(period)) %>% 
+  mutate(period = yearquarter(period)) %>%
   select(diag_per_active, period, origin, lpr3) %>%
   as_tsibble(key = origin, index = period) %>%
   model(arima = ARIMA(diag_per_active ~ 1 + lpr3 + pdq(0, 0, 0) + PDQ(0, 0, 0))) %>%
@@ -172,12 +171,10 @@ df_mitigation_seq_responsibility_id_incident_plot_p_values <- df_mitigation_seq_
   mutate(
     corrected_p = p.adjust(p.value, "fdr", n = 70), # 3 comparisons
     significant = if_else(corrected_p < 0.05, "*", "")
-  )
-
-df_mitigation_seq_responsibility_id_incident_plot_p_values_2 <- df_mitigation_seq_responsibility_id_incident_plot %>%
-   filter(period == max(period)) %>%
-   select(period, diag_per_active, origin) %>%
-   left_join(df_mitigation_seq_responsibility_id_incident_plot_p_values, by = "origin")
+  ) %>%
+  filter(period == max(period)) %>%
+  select(period, diag_per_active, origin) %>%
+  left_join(df_plot_mitigation_seq_responsibility_id_p_values, by = "origin")
 ```
 
 ### Generate plot
@@ -185,10 +182,10 @@ df_mitigation_seq_responsibility_id_incident_plot_p_values_2 <- df_mitigation_se
 source(here("src", "individual_unique_diagnoses_functions.r"))
 
 mitigation_seq_responsibility_id_incident_plot <- save_incident_per_active_plot(
-  df = df_mitigation_seq_responsibility_id_incident_plot,
+  df = df_plot_mitigation_seq_responsibility_id,
   filename = "mitigation_seq_responsibility_id_incident",
   exclusive_column_for_lpr2 = "Unmitigated",
-  p_values = df_mitigation_seq_responsibility_id_incident_plot_p_values_2,
+  p_values = df_plot_mitigation_seq_responsibility_id_p_values_2,
   nudge_constant = 0.001
 )
 
@@ -215,10 +212,10 @@ df_truncation$p_values <- df_truncation$estimates %>%
   mutate(
     corrected_p = p.adjust(p.value, "fdr", n = 70), # 4 comparisons
     significant = if_else(corrected_p < 0.05, "*", "")
-  ) 
+  )
 
 
-df_truncation$p_values <- df_truncation$p_values %>% 
+df_truncation$p_values <- df_truncation$p_values %>%
   mutate(period = max(df_truncation$estimates$period))
 ```
 
@@ -227,7 +224,7 @@ source(here("src", "individual_unique_diagnoses_functions.r"))
 
 truncation_plot <- save_truncation_plot(
   df = df_truncation$estimates,
-  filename ="examine_truncation_individual_unique_diagnoses_by_quarter_p_values",
+  filename = "examine_truncation_individual_unique_diagnoses_by_quarter_p_values",
   p_values = df_truncation$p_values
 )
 
@@ -236,9 +233,11 @@ truncation_plot
 
 ### Combined
 ```{r}
-combined <- save_combined_plots(truncation_plot,
-                                mitigation_seq_responsibility_id_incident_plot,
-                                "figure_4")
+combined <- save_combined_plots(
+  truncation_plot,
+  mitigation_seq_responsibility_id_incident_plot,
+  "figure_4"
+)
 
 combined
 ```
@@ -246,17 +245,17 @@ combined
 
 # Table
 ```{r}
-df_unique_in_period 
+df_n_patient_diagnoses_by_quarter
 
-df_unique_in_period_final_visit
+df_n_patient_diagnoses_by_quarter_final_visit
 
-df_unique_in_period_most_severe
+df_n_patient_diagnoses_by_quarter_most_severe
 
-df_table <- df_open_sequences_in_period %>% 
-  right_join(df_unique_in_period) %>% 
-  rename(unique_diagnoses_default = unique_diagnoses_fxx) %>% 
-  right_join(df_unique_in_period_most_severe) %>% 
-  rename(unique_diagnoses_most_severe = unique_diagnoses_fxx) %>% 
-  right_join(df_unique_in_period_final_visit) %>% 
+df_table <- df_n_open_courses_by_period %>%
+  right_join(df_n_patient_diagnoses_by_quarter) %>%
+  rename(unique_diagnoses_default = unique_diagnoses_fxx) %>%
+  right_join(df_n_patient_diagnoses_by_quarter_most_severe) %>%
+  rename(unique_diagnoses_most_severe = unique_diagnoses_fxx) %>%
+  right_join(df_n_patient_diagnoses_by_quarter_final_visit) %>%
   rename(unique_diagnoses_final_visit = unique_diagnoses_fxx)
 ```

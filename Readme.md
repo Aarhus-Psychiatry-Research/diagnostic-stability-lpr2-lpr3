@@ -1,5 +1,7 @@
 Examining the stability of diagnostic coding across the transition from the DNPR2 to the DNPR3 for a publication: [INSERT LINK HERE]
 
+In general, code uses lpr3 for DNPR3 and lpr2 for DNPR2. This is to conform with the naming scheme in the Central Denmark Region Business Intelligence Office, which is where the data comes from.
+
 Split into multiple directories:
 1. Doc/validation – where we check assumptions about the data which have been questioned during our analyses
 2. rmd - where we perform data management and analyses

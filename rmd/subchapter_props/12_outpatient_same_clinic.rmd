@@ -35,7 +35,7 @@ df_prop_of_patients_with_diag_from_subcp <- prop_of_patients_with_diagnosis_by_s
 #### Final visit
 ```{r}
 df_visits_relabel_final_diag <- df_outpatient_visits_clinic_id %>%
-  recode_diagnoses_with_last_in_sequence(constructed_id)
+  recode_diagnoses_with_last_in_sequence(patient_clinic_id)
 
 df_n_patients_by_subcp_by_quarter_relabel_final_diag <- df_visits_relabel_final_diag %>%
   add_column_n_with_diagnosis_in_period()
@@ -48,7 +48,7 @@ df_prop_diag_constructed_sequence_final_visit_only <- prop_of_patients_with_diag
 #### Most severe visit
 ```{r}
 df_visits_relabel_most_severe_diag <- df_outpatient_visits_clinic_id %>%
-  relabel_diag_most_severe(constructed_id)
+  relabel_diag_most_severe(patient_clinic_id)
 
 df_n_patients_by_subcp_by_quarter_relabel_most_severe <- df_visits_relabel_most_severe_diag %>%
   add_column_n_with_diagnosis_in_period()
