@@ -89,7 +89,7 @@ save_truncation_plot <- function(df, filename, p_values = NULL) {
         ) +
         labs(
             x = "",
-            y = "Number of different diagnoses in quarter \n per active treatment course"
+            y = "Mean number of different diagnoses \n per active treatment course"
         ) +
         scale_x_date +
         incident_per_active_y_limits
@@ -188,7 +188,7 @@ save_mitigation_strategy_plot <- function(df, filename, p_values = NULL, nudge_c
         ) +
         labs(
             x = "",
-            y = "Number of different diagnoses in quarter \n per active treatment course",
+            y = "Mean number of different diagnoses \n per active treatment course",
             fill = "ICD-10 chapter"
         ) +
         scale_x_date +
@@ -308,7 +308,7 @@ save_incident_per_active_plot <- function(df, filename, p_values = NULL, nudge_c
         ) +
         labs(
             x = "",
-            y = "Number of different diagnoses in quarter \n per active treatment course",
+            y = "Mean number of different diagnoses \n per active treatment course",
             fill = "ICD-10 chapter"
         ) +
         scale_x_date +

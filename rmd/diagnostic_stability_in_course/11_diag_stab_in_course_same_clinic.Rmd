@@ -5,22 +5,14 @@ output:
   html_document: default
 always_allow_html: yes
 ---
-# Stability connected series, constructed
-
-```{r}
-pacman::p_load(DBI, data.table, dtply, dplyr, lubridate, ggplot2, stringr, tidyr, ggalluvial, here)
-
-source(here("src", "utils.r"))
-source(here("src", "functions.r"))
-```
-
+# Stability connected series, same_clinic
 ## General data wrangling
 ```{r get-raw}
 df_raw_outpatient <- get_fct("FOR_besoeg_fysiske_fremmoeder_inkl_2021") %>%
   clean_sql_import()
 
 df_outpatient_preprocessed <- df_raw_outpatient %>%
-  mutate(no_threshold_constructed_id = paste0(dw_ek_borger, shakafskode_besoeg)) %>%
+  mutate(no_threshold_same_clinic_id = paste0(dw_ek_borger, shakafskode_besoeg)) %>%
   keep_only_psych_visits() %>%
   select(
     dw_ek_borger,
@@ -30,7 +22,7 @@ df_outpatient_preprocessed <- df_raw_outpatient %>%
     dw_sk_lpr3forloebsansvar,
     dw_sk_kontakt,
     shakafskode_besoeg,
-    no_threshold_constructed_id
+    no_threshold_same_clinic_id
   ) %>%
   add_LPR23_quarter_column() %>%
   filter(period > ymd("2012-05-01")) %>% 
@@ -40,7 +32,7 @@ df_outpatient_preprocessed <- df_raw_outpatient %>%
 ## No threshold
 ### Data wrangling
 ```{r construct-no-threshold}
-df_constructed_no_threshold <- df_outpatient_preprocessed %>%
+df_visits_with_clinic_id <- df_outpatient_preprocessed %>%
   keep_only_psych_visits() %>%
   mutate(adiagnosekode = substring(adiagnosekode, 1, 2)) %>%
   construct_sequence_ids(
@@ -54,11 +46,11 @@ df_constructed_no_threshold <- df_outpatient_preprocessed %>%
 ```
 
 ```{r}
-df_with_contact_counts_constructed_no_threshold <- df_constructed_no_threshold %>%
-  group_by(constructed_id) %>%
+df_visits_with_clinic_id_numbered <- df_visits_with_clinic_id %>%
+  group_by(same_clinic_id) %>%
   arrange(datotid_start, .by_group = T) %>%
   mutate(contact_nr = row_number()) %>%
-  group_by(constructed_id) %>%
+  group_by(same_clinic_id) %>%
   mutate(total_contacts = max(contact_nr))
 
 log_time()
@@ -67,9 +59,9 @@ log_time()
 ### Plotting
 ```{r}
 ## Changes over n_visits
-df_one_row_per_sequence_constructed_no_threshold <- df_with_contact_counts_constructed_no_threshold %>%
+df_treatment_courses <- df_visits_with_clinic_id_numbered %>%
   ## filter(total_contacts > 1) %>% ## Want to also visualise contacts that aren't part of a connected series
-  group_by(constructed_id) %>%
+  group_by(same_clinic_id) %>%
   mutate(first_diagnosis = str_c(adiagnosekode)) %>%
   mutate(last_diagnosis = str_c(last(adiagnosekode))) %>%
   filter(contact_nr == 1)
@@ -79,7 +71,7 @@ log_time()
 
 
 ```{r}
-df_alluvial_final_constructed_no_threshold <- df_one_row_per_sequence_constructed_no_threshold %>%
+df_treatment_courses_filtered <- df_treatment_courses %>%
   filter(substr(first_diagnosis, 1, 1) == "Z" | substr(first_diagnosis, 1, 1) == "F") %>%
   mutate(first_diagnosis = ifelse(substr(first_diagnosis, 1, 1) == "Z", "ZX", first_diagnosis)) %>%
   mutate(last_diagnosis = ifelse(substr(last_diagnosis, 1, 1) == "Z", "ZX", last_diagnosis)) %>%
@@ -92,7 +84,7 @@ log_time()
 ```
 
 ```{r}
-allu_df_summarized_constructed_no_threshold <- df_alluvial_final_constructed_no_threshold %>%
+df_treatment_courses_filtered_counted <- df_treatment_courses_filtered %>%
   group_by(first_diagnosis, last_diagnosis) %>%
   summarize(n = n()) %>%
   filter(n > 5)
@@ -104,17 +96,17 @@ log_time()
 source(here("src", "stability_connected_series_functions.r"))
 
 save_alluvial_plot(
-  df = allu_df_summarized_constructed_no_threshold,
-  filename = "allu_first_last_constructed_no_threshold"
+  df = df_treatment_courses_filtered_counted,
+  filename = "allu_first_last_same_clinic_no_threshold"
 )
 
 log_time()
 ```
 
 ```{r}
-first_diagnosis_table <- gen_first_diagnosis_table(df_alluvial_final_constructed_no_threshold)
+first_diagnosis_table <- gen_first_diagnosis_table(df_treatment_courses_filtered)
 
-last_diagnosis_table <- gen_last_diagnosis_table(df_alluvial_final_constructed_no_threshold)
+last_diagnosis_table <- gen_last_diagnosis_table(df_treatment_courses_filtered)
 ```
 
 ### Tables

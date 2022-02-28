@@ -27,7 +27,7 @@ save_alluvial_plot <- function(df, filename = "allu_first_last") {
         ) +
         labs(
             fill = "Final diagnosis",
-            y = "Proportion of connected series of events"
+            y = "Proportion of outpatient treatment courses"
         ) +
         theme(
             axis.title = element_text(size = 30),

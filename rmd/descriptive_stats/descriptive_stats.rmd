@@ -1,17 +1,18 @@
-
-Dataframes from 1b_outpatient_constructed
+Dataframes are generated in rmd/individual_unique_diagnoses/01_gen_general_dfs. 
 
 ```{r}
-max(df_outpatient_preprocessed$datotid_start) # End-date
+max(df_outpatient_preprocessed$datotid_start) # End-date of cohort
 
-length(unique(df_outpatient_preprocessed$dw_ek_borger)) # Unique outpatients
+length(unique(df_outpatient_preprocessed$dw_ek_borger)) # Number of unique outpatients
 
-dim(df_outpatient_preprocessed) # Number of visits
+dim(df_outpatient_preprocessed) # Total number of visits
 
 ```
 
 # Description of visit numbers
 ```{r}
+p_load(skimr)
+
 df_visits_pr_patient <- df_outpatient_preprocessed %>% 
   group_by(dw_ek_borger) %>% 
   summarise(n_visits = n())

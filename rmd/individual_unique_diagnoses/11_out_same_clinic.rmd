@@ -14,7 +14,7 @@ df_outpatient_constructed_no_threshold <- df_outpatient_preprocessed %>%
 
 ```{r}
 df_outpatient_constructed_no_threshold_most_severe <- df_outpatient_constructed_no_threshold %>% 
-  recode_with_most_severe_diagnosis_for_sequence(constructed_id)
+  relabel_diag_most_severe(constructed_id)
   
 ```
 
@@ -205,6 +205,24 @@ df_mitigation_constructed_incident_no_threshold_plot_p_values_2 <- df_mitigation
    left_join(df_mitigation_constructed_incident_no_threshold_plot_p_values, by = "origin")
 ```
 
+### Calculate SDs
+```{r}
+df_sds <- df_mitigation_constructed_incident_no_threshold_plot %>% 
+  mutate(lpr3 = if_else(period < "2019-02-03", 0, 1))
+
+df_before <- df_sds %>% 
+  filter(lpr3 == 0) %>% 
+  filter(origin == "Unmitigated")
+
+df_after <- df_sds %>% 
+  filter(lpr3 == 1) %>% 
+  filter(origin == "Unmitigated")
+
+sd(df_before$diag_per_active)
+sd(df_after$diag_per_active)
+```
+
+
 ### Generate plot
 ```{r}
 source(here("src", "individual_unique_diagnoses_functions.r"))
@@ -280,9 +298,10 @@ df_unique_in_period_no_threshold_most_severe
 
 df_table <- df_open_sequences_in_period %>% 
   right_join(df_unique_in_period) %>% 
-  rename(unique_diagnoses_default = unique_diagnoses_fxx) %>% 
+  rename(unique_diagnoses_default = unique_diagnoses_3) %>% 
   right_join(df_unique_in_period_no_threshold_most_severe) %>% 
-  rename(unique_diagnoses_most_severe = unique_diagnoses_fxx) %>% 
+  rename(unique_diagnoses_most_severe = unique_diagnoses_3) %>% 
   right_join(df_unique_in_period_no_threshold_final_visit) %>% 
-  rename(unique_diagnoses_final_visit = unique_diagnoses_fxx)
+  rename(unique_diagnoses_final_visit = unique_diagnoses_3) %>% 
+  mutate(ratio = unique_diagnoses_default/open_sequences)
 ```

@@ -4,7 +4,7 @@ editor_options:
   chunk_output_type: inline
 ---
 ```{r}
-source(here("rmd", "subchapter_props", "0_setup_env.r"))
+library(here)
 ```
 # Subchapter props, outpatient constructed
 ## Run 1a_outpatient_naive.rmd first!
@@ -30,7 +30,7 @@ df_constructed_outpatient_series <- df_outpatient_for_subchapter %>%
 df_n_with_diag_in_period_constructed_default <- df_constructed_outpatient_series %>%
   add_column_n_with_diagnosis_in_period()
 
-df_prop_diag_constructed_sequence_default <- calc_prop_of_unique_patients_with_diagnosis(
+df_prop_diag_constructed_sequence_default <- prop_of_patients_with_diagnosis_by_subcp(
   df_unique_in_period_outpatient,
   df_n_with_diag_in_period_constructed_default
 )
@@ -45,7 +45,7 @@ df_constructed_sequence_final_visit_only <- df_constructed_outpatient_series %>%
 df_n_with_diag_in_period_constructed_final_diag <- df_constructed_sequence_final_visit_only %>%
   add_column_n_with_diagnosis_in_period()
 
-df_prop_diag_constructed_sequence_final_visit_only <- calc_prop_of_unique_patients_with_diagnosis(
+df_prop_diag_constructed_sequence_final_visit_only <- prop_of_patients_with_diagnosis_by_subcp(
   df_unique_in_period_outpatient,
   df_n_with_diag_in_period_constructed_final_diag
 )
@@ -53,12 +53,12 @@ df_prop_diag_constructed_sequence_final_visit_only <- calc_prop_of_unique_patien
 #### Most severe visit
 ```{r}
 df_constructed_sequence_most_severe_diag <- df_constructed_outpatient_series %>%
-  recode_with_most_severe_diagnosis_for_sequence(constructed_id)
+  relabel_diag_most_severe(constructed_id)
 
 df_n_with_diag_in_period_constructed_most_severe_diag <- df_constructed_sequence_most_severe_diag %>%
   add_column_n_with_diagnosis_in_period()
 
-df_prop_diag_constructed_sequence_most_severe_diag <- calc_prop_of_unique_patients_with_diagnosis(
+df_prop_diag_constructed_sequence_most_severe_diag <- prop_of_patients_with_diagnosis_by_subcp(
   df_unique_in_period_outpatient,
   df_n_with_diag_in_period_constructed_most_severe_diag
 )
@@ -86,14 +86,14 @@ source(here::here("src", "subchapter_props_functions.r"))
 graph_subchapter_props(df_examine_mitigation_constructed_sequences,
   filename = "examine_mitigation_constructed_full_same_y_axes",
   date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
-  ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
+  ylabel = "Proportion of outpatients with within-quarter incident main diagnosis from chapter",
   tag = "A"
 )
 
 graph_subchapter_props(df_examine_mitigation_constructed_sequences,
   filename = "examine_mitigation_constructed_full_free_y_axes",
   date_range = c(ymd("2011-06-01"), ymd("2021-01-01")),
-  ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
+  ylabel = "Proportion of outpatients with within-quarter incident main diagnosis from chapter",
   tag = "B"
 )
 
@@ -129,9 +129,19 @@ df_examine_mitigation_constructed_sequences_without_first_quarters_p_values <- d
   left_join(df_examine_mitigation_constructed_sequences_without_first_quarters_p_values, by = c("origin", "adiagnosekode")) %>%
   mutate(corrected_p <- p.adjust(p.value, "fdr", n = 70), # 30 comparisons
     significant = if_else(corrected_p < 0.05, "*", "")
-  )
-
-df_examine_mitigation_constructed_sequences_without_first_quarters_p_values
+  ) %>% 
+  mutate(adiagnosekode = case_when(
+            adiagnosekode == "F0" ~ "F0 - Organic disorders",
+            adiagnosekode == "F1" ~ "F1 - Substance abuse",
+            adiagnosekode == "F2" ~ "F2 - Psychotic disorders",
+            adiagnosekode == "F3" ~ "F3 - Mood disorders",
+            adiagnosekode == "F4" ~ "F4 - Neurotic & stress-related",
+            adiagnosekode == "F5" ~ "F5 - Eating & sleeping disorders",
+            adiagnosekode == "F6" ~ "F6 - Personality disorders",
+            adiagnosekode == "F7" ~ "F7 - Mental retardation",
+            adiagnosekode == "F8" ~ "F8 - Developmental disorders",
+            adiagnosekode == "F9" ~ "F9 - Child & adolescent disorders"
+        ))
 ```
 
 
@@ -143,7 +153,7 @@ source(here("src", "subchapter_props_functions.r"))
 graph_subchapter_props(df_examine_mitigation_constructed_sequences_without_first_quarters,
   filename = "examine_mitigation_constructed_without_first_quarters_full_same_y_axes_with_p_values",
   date_range = c(ymd("2013-01-01"), ymd("2022-05-01")),
-  ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
+  ylabel = "Proportion of outpatients with within-quarter incident main diagnosis from chapter",
   p_values = df_examine_mitigation_constructed_sequences_without_first_quarters_p_values,
   nudge_constant = 0.02,
   tag = "A"
@@ -152,7 +162,7 @@ graph_subchapter_props(df_examine_mitigation_constructed_sequences_without_first
 graph_subchapter_props(df_examine_mitigation_constructed_sequences_without_first_quarters,
   filename = "examine_mitigation_constructed_without_first_quarters_full_free_y_axes_with_p_values",
   date_range = c(ymd("2013-01-01"), ymd("2022-10-01")),
-  ylabel = "Proportion of outpatients with incident main diagnosis from chapter",
+  ylabel = "Proportion of outpatients with within-quarter incident main diagnosis from chapter",
   p_values = df_examine_mitigation_constructed_sequences_without_first_quarters_p_values,
   nudge_frac = 0.02,
   tag = "B"

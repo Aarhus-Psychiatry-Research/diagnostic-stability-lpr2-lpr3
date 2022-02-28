@@ -21,7 +21,7 @@ add_column_n_with_diagnosis_in_period <- function(df) {
   return(df_out)
 }
 
-calc_prop_of_unique_patients_with_diagnosis <- function(df1, df2) {
+prop_of_patients_with_diagnosis_by_subcp <- function(df1, df2) {
   df_out <- df1 %>%
     left_join(df2) %>%
     rowwise() %>%
@@ -43,8 +43,8 @@ calc_prop_of_unique_patients_with_diagnosis <- function(df1, df2) {
 #' Ignores visits if id_column == ignore_id
 #' 
 #' @param id_col The ID column for the LPR2 visits
-#' @param ignore_id
-recode_with_most_severe_diagnosis_for_sequence <- function(df, id_col, ignore_id = -1) {
+#' @param ignore_id IDs that a visit has in the LPR2/3 col if it doesn't belong to that LPR version
+relabel_diag_most_severe <- function(df, id_col, ignore_id = -1) {
 
   df_lpr2 <- df %>% 
     filter({{ id_col }} == ignore_id)

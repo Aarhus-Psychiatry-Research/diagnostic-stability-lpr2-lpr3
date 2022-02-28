@@ -4,8 +4,9 @@ editor_options:
   chunk_output_type: inline
 ---
 ```{r}
-source(here("rmd", "subchapter_props", "0_setup_env.r"))
+library(here)
 ```
+
 
 ## Inpatient flow
 ### Inpatient: Select variables and join LPR2/LPR3 
@@ -42,10 +43,12 @@ df_unique_in_period_inpatient <- df_inpatient_for_subchapter %>%
 df_unique_with_diagnosis_inpatient <- df_inpatient_for_subchapter %>%
   add_column_n_with_diagnosis_in_period()
 
-df_prop_diag_inpatient <- calc_prop_of_unique_patients_with_diagnosis(
+df_prop_diag_inpatient <- prop_of_patients_with_diagnosis_by_subcp(
   df_unique_in_period_inpatient,
   df_unique_with_diagnosis_inpatient
 )
+
+write_csv(df_prop_diag_inpatient, here("csv", "df_prop_diag_inpatient"))
 
 log_time()
 ```
@@ -53,11 +56,13 @@ log_time()
 ```{r}
 source(here("src", "subchapter_props_functions.r"))
 
+df_prop_diag_inpatient <- read_csv(here("csv", "df_prop_diag_inpatient"))
+
 graph_subchapter_props(df_prop_diag_inpatient,
   filename = "examine_inpatient_same_y_axes",
   date_range = c(ymd("2013-01-01"), ymd("2021-01-01")),
   with_mitigation = FALSE,
-  ylabel = "Proportion of inpatients with incident main diagnosis from chapter",
+  ylabel = "Proportion of inpatients with within-quarter incident main diagnosis from chapter",
   tag = "A"
 )
 
@@ -65,7 +70,7 @@ graph_subchapter_props(df_prop_diag_inpatient,
   filename = "examine_inpatient_free_y_axes",
   date_range = c(ymd("2013-01-01"), ymd("2021-01-01")),
   with_mitigation = FALSE,
-  ylabel = "Proportion of inpatients with incident main diagnosis from chapter",
+  ylabel = "Proportion of inpatients with within-quarter incident main diagnosis from chapter",
   tag = "B"
 )
 

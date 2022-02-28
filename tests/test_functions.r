@@ -110,7 +110,7 @@ test_dfs$recode <- tibble::tribble(
 )
 
 test_dfs$recode_most_severe <-test_dfs$recode %>% 
-  recode_with_most_severe_diagnosis_for_sequence(id_col = dw_sk_lpr3forloebsansvar) %>% 
+  relabel_diag_most_severe(id_col = dw_sk_lpr3forloebsansvar) %>% 
   arrange(dw_sk_lpr3forloebsansvar, dw_sk_kontakt)
 
 

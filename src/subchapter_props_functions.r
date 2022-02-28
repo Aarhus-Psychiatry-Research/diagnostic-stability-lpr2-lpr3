@@ -29,7 +29,19 @@ graph_subchapter_props <- function(df,
     library("gridExtra")
     library("here")
 
-    df <- df
+    df <- df %>% 
+        mutate(adiagnosekode = case_when(
+            adiagnosekode == "F0" ~ "F0 - Organic disorders",
+            adiagnosekode == "F1" ~ "F1 - Substance abuse",
+            adiagnosekode == "F2" ~ "F2 - Psychotic disorders",
+            adiagnosekode == "F3" ~ "F3 - Mood disorders",
+            adiagnosekode == "F4" ~ "F4 - Neurotic & stress-related",
+            adiagnosekode == "F5" ~ "F5 - Eating & sleeping disorders",
+            adiagnosekode == "F6" ~ "F6 - Personality disorders",
+            adiagnosekode == "F7" ~ "F7 - Mental retardation",
+            adiagnosekode == "F8" ~ "F8 - Developmental disorders",
+            adiagnosekode == "F9" ~ "F9 - Child & adolescent disorders"
+        ))
 
     if (with_mitigation) {
         df <- df %>%
