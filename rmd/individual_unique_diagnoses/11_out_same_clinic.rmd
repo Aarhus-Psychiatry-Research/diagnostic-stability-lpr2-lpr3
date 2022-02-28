@@ -2,13 +2,9 @@
 ## No threshold
 ```{r}
 df_outpatient_constructed_no_threshold <- df_outpatient_preprocessed %>%
-  construct_sequence_ids(
+  add_patient_and_clinic_uid(
     clinic_id_col = shakafskode_besoeg,
-    patient_id_col = dw_ek_borger,
-    datetime_col = datotid_start,
-    datetime_col_name = "datotid_start",
-    threshold_months = 0,
-    verbose = TRUE
+    patient_id_col = dw_ek_borger
   )
 ```
 

@@ -12,7 +12,7 @@ df_raw_outpatient <- get_fct("FOR_besoeg_fysiske_fremmoeder_inkl_2021") %>%
   clean_sql_import()
 
 df_outpatient_preprocessed <- df_raw_outpatient %>%
-  mutate(no_threshold_same_clinic_id = paste0(dw_ek_borger, shakafskode_besoeg)) %>%
+  mutate(no_threshold_patient_clinic_id = paste0(dw_ek_borger, shakafskode_besoeg)) %>%
   keep_only_psych_visits() %>%
   select(
     dw_ek_borger,
@@ -22,7 +22,7 @@ df_outpatient_preprocessed <- df_raw_outpatient %>%
     dw_sk_lpr3forloebsansvar,
     dw_sk_kontakt,
     shakafskode_besoeg,
-    no_threshold_same_clinic_id
+    no_threshold_patient_clinic_id
   ) %>%
   add_LPR23_quarter_column() %>%
   filter(period > ymd("2012-05-01")) %>% 
@@ -35,22 +35,18 @@ df_outpatient_preprocessed <- df_raw_outpatient %>%
 df_visits_with_clinic_id <- df_outpatient_preprocessed %>%
   keep_only_psych_visits() %>%
   mutate(adiagnosekode = substring(adiagnosekode, 1, 2)) %>%
-  construct_sequence_ids(
+  add_patient_and_clinic_uid(
     clinic_id_col = shakafskode_besoeg,
-    patient_id_col = dw_ek_borger,
-    datetime_col = datotid_start,
-    datetime_col_name = "datotid_start",
-    threshold_months = 0,
-    verbose = TRUE
+    patient_id_col = dw_ek_borger
   )
 ```
 
 ```{r}
 df_visits_with_clinic_id_numbered <- df_visits_with_clinic_id %>%
-  group_by(same_clinic_id) %>%
+  group_by(patient_clinic_id) %>%
   arrange(datotid_start, .by_group = T) %>%
   mutate(contact_nr = row_number()) %>%
-  group_by(same_clinic_id) %>%
+  group_by(patient_clinic_id) %>%
   mutate(total_contacts = max(contact_nr))
 
 log_time()
@@ -61,7 +57,7 @@ log_time()
 ## Changes over n_visits
 df_treatment_courses <- df_visits_with_clinic_id_numbered %>%
   ## filter(total_contacts > 1) %>% ## Want to also visualise contacts that aren't part of a connected series
-  group_by(same_clinic_id) %>%
+  group_by(patient_clinic_id) %>%
   mutate(first_diagnosis = str_c(adiagnosekode)) %>%
   mutate(last_diagnosis = str_c(last(adiagnosekode))) %>%
   filter(contact_nr == 1)

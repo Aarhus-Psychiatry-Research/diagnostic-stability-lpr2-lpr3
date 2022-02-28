@@ -108,9 +108,6 @@ df_per_patient_most_severe <- join_and_calculate_diagnoses_per_open_sequence(
 ```
 
 
-
-
-
 # Final diagnosis
 ## Unique diagnoses in each period 
 ```{r}
@@ -126,9 +123,6 @@ df_per_patient_final_visit <- join_and_calculate_diagnoses_per_open_sequence(
   df_unique_in_period_final_visit
 )
 ```
-
-
-
 
 
 # Plot
@@ -248,7 +242,6 @@ combined <- save_combined_plots(truncation_plot,
 
 combined
 ```
-
 
 
 # Table

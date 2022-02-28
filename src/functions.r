@@ -186,117 +186,23 @@ log_time <- function() {
 }
 
 #' Takes a dataframe with visits as rows. Constructs unique keys for each sequence based on
-#' clinic ID and patient ID. If distance between visits is higher than threshold, create a new
-#' unique clinic ID + patient ID key.
-#'
-#' Terminology:
-#'  no_threshold_sequence: A connected series of outpatient visits, where their IDs are location + patient ID
+#' clinic ID and patient ID.
 #'
 #' @param df
 #' @param clinic_id_col
 #' @param patient_id_col
-#' @param datetime_col_name A string representation of the name of the datetime_col. An unfortunate side_effect of using dplyr.
-#' @param threshold_months Number of months between visits to consider a new sequence. If false, don't do sequencing.
 #' 
 #'
 #' @return df_with_constructed_sequences
 
-construct_sequence_ids <- function(
+add_patient_and_clinic_uid <- function(
                         df, 
                         clinic_id_col, 
-                        patient_id_col, 
-                        datetime_col, 
-                        datetime_col_name,
-                        threshold_months = FALSE, 
-                        verbose = TRUE) 
-                       {
-  
-  stopifnot(is.POSIXct(df[[datetime_col_name]]))
+                        patient_id_col) {
 
-  df <- df %>% mutate(no_threshold_constructed_id = paste0({{ patient_id_col }}, {{ clinic_id_col }}))
+  df <- df %>% mutate(patient_clinic_id = paste0({{ patient_id_col }}, {{ clinic_id_col }}))
   
-  if (threshold_months == FALSE) {
-    df <- df %>%
-      rename(constructed_id = no_threshold_constructed_id)
-
-    return(df)
-  } else {
-    MONTH_IN_SECONDS <- 30 * 24 * 60 * 60 ## Calculate seconds in a month to add to POSIXct.
-    THRESHOLD_MONTHS_IN_SECONDS <- MONTH_IN_SECONDS * threshold_months
-    
-    df <- df %>%
-      mutate(last_datotid_start = lag({{datetime_col}})) %>%
-      mutate(threshold_date = last_datotid_start + THRESHOLD_MONTHS_IN_SECONDS) %>%
-      mutate(split_sequence_vectorised = if_else(threshold_date < {{datetime_col}}, 1, 0)) %>%
-      arrange({{patient_id_col}}, no_threshold_constructed_id, {{ datetime_col }})
-    
-    current_no_threshold_id <- 0 ## The ID constructed without taking thresholds into account
-    current_threshold_sequence_id <- 0
-    
-    all_sequences_n <- 0
-    
-    DF_LENGTH <- nrow(df)
-    
-    prev_ids <- vector(length = DF_LENGTH)
-    split_sequences <- vector(length = DF_LENGTH)
-    constructed_ids <- vector(length = DF_LENGTH)
-    
-    total_sequences <- df %>%
-      select(no_threshold_constructed_id) %>%
-      n_distinct()
-    
-    constructed_ids <- c()
-    
-    for (i in 1:nrow(df)) {
-      i_no_threshold_id <- df$no_threshold_constructed_id[i]
-      
-      ## If no_threshold ID has changed, consider to be a new sequence
-      if (i_no_threshold_id != current_no_threshold_id) {
-        prev_ids[i] <- current_no_threshold_id
-        
-        current_threshold_id_sequence_nr <- 1
-        
-        current_no_threshold_id <- i_no_threshold_id
-        current_threshold_sequence_id <- paste0(i_no_threshold_id, current_threshold_id_sequence_nr)
-        
-        if (all_sequences_n %% 1000 == 0) {
-          percent_complete_rounded <- round(all_sequences_n / total_sequences * 100, digits = 1)
-          print(str_c(percent_complete_rounded, "%: Processing sequence nr. ", all_sequences_n))
-        }
-        
-        all_sequences_n <- all_sequences_n + 1
-        
-        constructed_ids[i] <- current_threshold_sequence_id
-        
-        next()
-      }
-      
-      ## Continue processing the same no_threshold sequence
-      if (i_no_threshold_id == current_no_threshold_id) {
-        prev_ids[i] <- current_no_threshold_id
-        
-        ## Handle recoding if distance is larger than threshold
-        if (isTRUE(df$split_sequence_vectorised[i] == 1)) {
-          split_sequences[i] <- 1
-          
-          current_threshold_id_sequence_nr <- current_threshold_id_sequence_nr + 1
-          current_threshold_sequence_id <- paste0(i_no_threshold_id, current_threshold_id_sequence_nr)
-        }
-      }
-      constructed_ids[i] <- current_threshold_sequence_id
-    }
-    
-    df$prev_id <- prev_ids
-    df$split_sequence <- split_sequences
-    df$constructed_id <- constructed_ids
-  }
-  
-  return(df %>% select(-c(
-    no_threshold_constructed_id, 
-    last_datotid_start, 
-    split_sequence_vectorised, 
-    prev_id, 
-    split_sequence)))
+  return(df)
 }
 
 create_mitigation_df <- function(df_default, df_most_severe, df_last_visit_only) {
@@ -343,8 +249,8 @@ convert_to_sequences_for_incident_per_active <- function(df) {
   df_out <- df %>% 
     mutate(date = as_date(datotid_start)) %>% 
     filter(date >= "2012-07-01") %>% 
-    select(dw_ek_borger, date, constructed_id) %>% 
-    convert_visits_to_sequences(sequence_id_col = constructed_id,
+    select(dw_ek_borger, date, patient_clinic_id) %>% 
+    convert_visits_to_sequences(sequence_id_col = patient_clinic_id,
                                 date_col = date) %>% 
     mutate(sequence_end_date = sequence_end_date + 180) %>%  ## Pad sequence_end_date with 3 months, to count as active if last visit is within three months
     collapse_sequences_if_same_patient()

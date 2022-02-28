@@ -13,13 +13,9 @@ source(here::here("src", "functions.r"))
 
 df_outpatient_visits_clinic_id <- df_outpatient_for_subchapter %>%
   keep_only_psych_visits() %>%
-  construct_sequence_ids(
+  add_patient_and_clinic_uid(
     clinic_id_col = clinic,
-    patient_id_col = dw_ek_borger,
-    datetime_col = datotid_start,
-    datetime_col_name = "datotid_start",
-    threshold_months = 0,
-    verbose = TRUE
+    patient_id_col = dw_ek_borger
   ) %>%
   filter(period < ymd("2021-06-01"))
 ```
