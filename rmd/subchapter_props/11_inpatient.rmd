@@ -21,7 +21,8 @@ df_inpatient_lpr2 <- df_raw_lpr2_inpatient %>%
   rename(datotid_start = datotid_indlaeggelse)
 
 df_all_inpatient_visits <- bind_rows(df_inpatient_lpr2, df_inpatient_lpr3) %>%
-  filter(as.Date(datotid_start) < ymd("2021-06-01"))
+  filter(ymd(start_date_str) < as.Date(datotid_start), 
+         ymd(end_date_str) > as.Date(datotid_start))
 
 log_time()
 ```

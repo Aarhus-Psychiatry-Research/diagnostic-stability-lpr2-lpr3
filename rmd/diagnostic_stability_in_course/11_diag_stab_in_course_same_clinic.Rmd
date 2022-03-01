@@ -25,8 +25,9 @@ df_outpatient_visits_preprocessed <- df_raw_outpatient %>%
     no_threshold_patient_clinic_id
   ) %>%
   add_LPR23_quarter_column() %>%
-  filter(period > ymd("2012-05-01")) %>%
-  filter(period < ymd("2021-06-01"))
+  filter(ymd(start_date_str) < as.Date(datotid_start), 
+         ymd(end_date_str) > as.Date(datotid_start))
+  
 ```
 
 ## No threshold

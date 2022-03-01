@@ -1,6 +1,9 @@
 library("pacman")
 p_load(qwraps2, tidyverse, lubridate)
 
+start_date_str <- "2013-01-01"
+end_date_str <- "2021-06-01"
+
 add_column_unique_pt_in_period <- function(df) {
   df_out <- df %>%
     group_by(period) %>%
@@ -96,7 +99,7 @@ add_LPR23_quarter_column <- function(df) {
 #'
 #' @param id_col The ID column for the visits
 #' @param ignore_id
-recode_diagnoses_with_last_in_sequence <- function(df, id_col, ignore_id = -1) {
+relabel_diag_with_last_in_sequence <- function(df, id_col, ignore_id = -1) {
   df_lpr2 <- df %>%
     filter({{ id_col }} == ignore_id)
 
@@ -200,7 +203,7 @@ add_patient_and_clinic_uid <- function(df,
 
 create_mitigation_df <- function(df_default, df_most_severe, df_last_visit_only) {
   df_out <- df_default %>%
-    filter(period > ymd("2012-12-31")) %>%
+    filter(ymd(end_date_str) > period) %>%
     mutate(origin = "outpatient_all") %>%
     bind_rows(mutate(df_most_severe, origin = "most_severe")) %>%
     bind_rows(mutate(df_last_visit_only, origin = "final_visit")) %>%

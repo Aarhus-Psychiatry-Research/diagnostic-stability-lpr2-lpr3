@@ -10,7 +10,8 @@ always_allow_html: yes
 ```{r}
 df_raw <- get_fct("FOR_besoeg_fysiske_fremmoeder_inkl_2021") %>%
   clean_sql_import() %>% 
-  filter(as.Date(datotid_start) < ymd("2021-06-01"))
+  filter(ymd(start_date_str) < as.Date(datotid_start), 
+         ymd(end_date_str) > as.Date(datotid_start))
 
 df_psych_only <- df_raw %>%
   keep_only_psych_visits() %>%

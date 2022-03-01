@@ -16,7 +16,7 @@ df_out_visits_relabel_as_most_severe <- df_out_visits %>%
 
 ```{r}
 df_out_visits_relabel_as_last_diag <- df_out_visits %>%
-  recode_diagnoses_with_last_in_sequence(patient_clinic_id)
+  relabel_diag_with_last_in_sequence(patient_clinic_id)
 ```
 
 ```{r}
@@ -53,7 +53,7 @@ df_truncation$estimates <- df_truncation$fx %>%
   right_join(df_truncation$fxxx) %>%
   right_join(df_truncation$fxxxx) %>%
   right_join(df_n_open_courses_by_period) %>%
-  filter(period > "2013-01-01", period < "2021-04-02") %>%
+  filter(period > start_date_str, period < end_date_str) %>%
   pivot_longer(cols = 2:5, names_to = "truncation_level", values_to = "count") %>%
   add_poisson_test_column(count_col = count, opportunities_col = open_sequences) %>%
   mutate(truncation_level = case_when(
@@ -171,10 +171,12 @@ df_plot_mitigation_seq_responsibility_id_p_values <- df_plot_mitigation_seq_resp
   mutate(
     corrected_p = p.adjust(p.value, "fdr", n = 70), # 3 comparisons
     significant = if_else(corrected_p < 0.05, "*", "")
-  ) %>%
-  filter(period == max(period)) %>%
-  select(period, diag_per_active, origin) %>%
-  left_join(df_plot_mitigation_seq_responsibility_id_p_values, by = "origin")
+  ) 
+
+df_p_values_per_period <- df_plot_mitigation_seq_responsibility_id %>%
+   filter(period == max(period)) %>%
+   select(period, diag_per_active, origin) %>%
+   left_join(df_plot_mitigation_seq_responsibility_id_p_values, by = "origin")
 ```
 
 ### Generate plot
@@ -185,7 +187,7 @@ mitigation_seq_responsibility_id_incident_plot <- save_incident_per_active_plot(
   df = df_plot_mitigation_seq_responsibility_id,
   filename = "mitigation_seq_responsibility_id_incident",
   exclusive_column_for_lpr2 = "Unmitigated",
-  p_values = df_plot_mitigation_seq_responsibility_id_p_values_2,
+  p_values = df_p_values_per_period,
   nudge_constant = 0.001
 )
 
@@ -253,9 +255,9 @@ df_n_patient_diagnoses_by_quarter_most_severe
 
 df_table <- df_n_open_courses_by_period %>%
   right_join(df_n_patient_diagnoses_by_quarter) %>%
-  rename(unique_diagnoses_default = unique_diagnoses_fxx) %>%
+  rename(unique_diagnoses_default = unique_diagnoses_3) %>%
   right_join(df_n_patient_diagnoses_by_quarter_most_severe) %>%
-  rename(unique_diagnoses_most_severe = unique_diagnoses_fxx) %>%
+  rename(unique_diagnoses_most_severe = unique_diagnoses_3) %>%
   right_join(df_n_patient_diagnoses_by_quarter_final_visit) %>%
-  rename(unique_diagnoses_final_visit = unique_diagnoses_fxx)
+  rename(unique_diagnoses_final_visit = unique_diagnoses_3)
 ```

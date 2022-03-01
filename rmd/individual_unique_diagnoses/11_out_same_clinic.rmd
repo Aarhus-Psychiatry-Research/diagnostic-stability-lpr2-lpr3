@@ -108,16 +108,9 @@ df_n_diag_per_patient_most_severe <- join_and_calculate_diagnoses_per_open_seque
 ```
 
 # Final diagnosis
-```{r}
-df_out_visits_final_visit <- read_csv(here("csv", "df_out_visits_final_visit.csv"))
-```
-
 ## Convert to sequences
 ```{r}
-source(here("src", "functions.r"))
-
-df_n_patient_diagnoses_by_quarter_final_visit <- df_out_visits_final_visit %>%
-  visits_to_processed_treatment_courses() %>%
+df_n_patient_diagnoses_by_quarter_final_visit <- df_out_visits_relabel_as_last_diag %>%
   count_unique_diagnoses_in_period()
 ```
 
@@ -125,7 +118,7 @@ df_n_patient_diagnoses_by_quarter_final_visit <- df_out_visits_final_visit %>%
 ```{r}
 df_n_diag_per_patient_final_visit <- join_and_calculate_diagnoses_per_open_sequence(
   df_open_sequences_in_period,
-  df_n_patient_diagnoses_by_quarter_no_threshold_final_visit
+  df_n_patient_diagnoses_by_quarter_final_visit
 )
 ```
 
@@ -177,7 +170,9 @@ df_plot_mitigation_same_clinic_p_values <- df_plot_mitigation_same_clinic %>%
   mutate(
     corrected_p = p.adjust(p.value, "fdr", n = 70), # 3 comparisons
     significant = if_else(corrected_p < 0.05, "*", "")
-  ) %>%
+  ) 
+
+df_p_values_by_period <- df_plot_mitigation_same_clinic %>%
   filter(period == max(period)) %>%
   select(period, diag_per_active, origin) %>%
   left_join(df_plot_mitigation_same_clinic_p_values, by = "origin")
@@ -209,7 +204,7 @@ mitigation_constructed_incident_no_threshold_plot <- save_incident_per_active_pl
   df = df_plot_mitigation_same_clinic,
   filename = "mitigation_constructed_incident_no_threshold",
   exclusive_column_for_lpr2 = "Unmitigated",
-  p_values = df_plot_mitigation_same_clinic_p_values,
+  p_values = df_p_values_by_period,
   nudge_constant = 0.001
 )
 
@@ -272,16 +267,16 @@ combined
 ```{r}
 df_n_patient_diagnoses_by_quarter
 
-df_n_patient_diagnoses_by_quarter_no_threshold_final_visit
-
 df_n_patient_diagnoses_by_quarter_most_severe
+
+df_n_patient_diagnoses_by_quarter_final_visit
 
 df_table <- df_open_sequences_in_period %>%
   right_join(df_n_patient_diagnoses_by_quarter) %>%
   rename(unique_diagnoses_default = unique_diagnoses_3) %>%
   right_join(df_n_patient_diagnoses_by_quarter_most_severe) %>%
   rename(unique_diagnoses_most_severe = unique_diagnoses_3) %>%
-  right_join(df_n_patient_diagnoses_by_quarter_no_threshold_final_visit) %>%
+  right_join(df_n_patient_diagnoses_by_quarter_final_visit) %>%
   rename(unique_diagnoses_final_visit = unique_diagnoses_3) %>%
   mutate(ratio = unique_diagnoses_default / open_sequences)
 ```

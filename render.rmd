@@ -6,6 +6,9 @@ output: html_document
 ```{r setup, include=FALSE}
 library("pacman")
 p_load(bookdown, here, future, testthat)
+```
+
+```{r}
 future.seed = TRUE
 plan(multisession)
 
@@ -22,35 +25,34 @@ render_with_settings <- function(dir) {
 test_file(here("tests", "test_functions.r"))
 ```
 
-```{r}
-test_file(here("tests", "test_that_doubling.r"))
-```
-
-
 
 # Then run
 ```{r}
+future_subchapter %<-% render_with_settings("subchapter_props")
+```
+
+```{r}
 future_individual %<-% render_with_settings("individual_unique_diagnoses")
 ```
+
+```{r}
+future_connected_series %<-% render_with_settings("diagnostic_stability_in_course")
+```
+
+
+# Inspect while running
+```{r}
+future_subchapter
+```
+
 ```{r}
 future_individual
 ```
 
-
-```{r}
-future_connected_series %<-% render_with_settings("stability_connected_series")
-```
 ```{r}
 future_connected_series
 ```
 
-
-```{r}
-future_subchapter %<-% render_with_settings("subchapter_props")
-```
-```{r}
-future_subchapter
-```
 
 
 

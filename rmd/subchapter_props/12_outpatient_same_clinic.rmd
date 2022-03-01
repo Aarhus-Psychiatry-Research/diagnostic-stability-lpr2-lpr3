@@ -11,13 +11,13 @@ library(here)
 ```{r}
 source(here::here("src", "functions.r"))
 
-df_outpatient_visits_clinic_id <- df_outpatient_for_subchapter %>%
+df_outpatient_visits_clinic_id <- df_outpatient_visits %>%
   keep_only_psych_visits() %>%
   add_patient_and_clinic_uid(
     clinic_id_col = clinic,
     patient_id_col = dw_ek_borger
   ) %>%
-  filter(period < ymd("2021-06-01"))
+  filter(ymd(end_date_str) > as.Date(datotid_start))
 ```
 
 #### Default 
@@ -35,7 +35,7 @@ df_prop_of_patients_with_diag_from_subcp <- prop_of_patients_with_diagnosis_by_s
 #### Final visit
 ```{r}
 df_visits_relabel_final_diag <- df_outpatient_visits_clinic_id %>%
-  recode_diagnoses_with_last_in_sequence(patient_clinic_id)
+  relabel_diag_with_last_in_sequence(patient_clinic_id)
 
 df_n_patients_by_subcp_by_quarter_relabel_final_diag <- df_visits_relabel_final_diag %>%
   add_column_n_with_diagnosis_in_period()
@@ -98,7 +98,7 @@ log_time()
 ### Plot with p-values
 ```{r}
 df_n_patients_by_subcp_by_quarter_combined_without_first_quarters <- df_n_patients_by_subcp_by_quarter_combined %>%
-  filter(period > "2013-01-01")
+  filter(ymd(start_date_str) < as.Date(datotid_start))
 ```
 
 ```{r}

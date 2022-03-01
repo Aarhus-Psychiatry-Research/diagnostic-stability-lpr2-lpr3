@@ -14,7 +14,7 @@ Reduce complexity
 df_outpatient_visits <- df_raw_outpatient %>%
   filter(ambbesoeg == 1) %>%
   add_LPR23_quarter_column() %>%
-  filter(period < ymd("2021-06-01")) %>%
+  filter(ymd(end_date_str) > as.Date(datotid_start)) %>% 
   select(
     dw_ek_borger,
     datotid_start,
@@ -66,7 +66,7 @@ log_time()
 ```{r}
 source(here("src", "functions.r"))
 
-df_n_patients_by_subcp_by_quarter_relabel_diag_as_final <- relabel_diagnoses_with_last_in_sequence(dw_sk_lpr3forloebsansvar) %>%
+df_n_patients_by_subcp_by_quarter_relabel_diag_as_final <- df_outpatient_visits %>%  relabel_diag_with_last_in_sequence(dw_sk_lpr3forloebsansvar) %>%
   add_column_n_with_diagnosis_in_period()
 
 df_prop_diag_outpatient_final_visit_only <- prop_of_patients_with_diagnosis_by_subcp(
@@ -90,8 +90,8 @@ write_csv(df_n_patients_by_subchapters_combined, here("csv", "df_n_patients_by_s
 
 ```{r}
 df_n_patients_by_subchapters_combined_without_first_quarters <- df_n_patients_by_subchapters_combined %>%
-  filter(period > "2013-01-01") %>%
-  filter(period < "2021-02-01")
+  filter(ymd(start_date_str) < as.Date(datotid_start), 
+         ymd(end_date_str) > as.Date(datotid_start)) %>% 
 write_csv(df_n_patients_by_subchapters_combined_without_first_quarters, here("csv", "df_n_patients_by_subchapters_combined_without_first_quarters.csv"))
 
 log_time()
