@@ -1,9 +1,41 @@
-Dataframes are generated in rmd/individual_unique_diagnoses/01_gen_general_dfs. 
+```{r}
+library(pacman)
+p_load(here)
+source(here("src", "functions.r"))
+
+```
 
 ```{r}
-max(df_outpatient_visits_preprocessed$datotid_start) # End-date of cohort
+df_raw_outpatient <- get_fct("FOR_besoeg_fysiske_fremmoeder_inkl_2021") %>%
+  clean_sql_import()
 
-length(unique(df_outpatient_visits_preprocessed$dw_ek_borger)) # Number of unique outpatients
+df_raw_lpr3 <- get_fct("FOR_LPR3kontakter_psyk_somatik_inkl_2021") %>%
+  clean_sql_import()
+
+df_raw_lpr2_inpatient <- get_fct("FOR_indlaeggelser_psyk_somatik_LPR2_inkl_2021") %>%
+  clean_sql_import()
+
+df_outpatient_visits_preprocessed <- df_raw_outpatient %>%
+  add_patient_clinic_uid(clinic_id_col=shakafskode_besoeg, patient_id_col=dw_ek_borger) %>% 
+  keep_only_psych_visits() %>%
+  select(
+    dw_ek_borger,
+    datotid_start,
+    adiagnosekode,
+    ambbesoeg,
+    dw_sk_lpr3forloebsansvar,
+    dw_sk_kontakt,
+    shakafskode_besoeg,
+    patient_clinic_uid
+  ) %>%
+  filter(ymd(start_date_str) < as.Date(datotid_start), 
+         ymd(end_date_str) > as.Date(datotid_start))
+```
+
+```{r}
+max(df_outpatient_visits_preprocessed$datotid_start) # End-date of defined cohort
+
+length(unique(df_outpatient_visits_preprocessed$dw_ek_borger)) # Number of unique outpatients in cohort
 
 dim(df_outpatient_visits_preprocessed) # Total number of visits
 ```
@@ -24,10 +56,35 @@ median(df_visits_pr_patient$n_visits)
 ```{r}
 dim(df_outpatient_visits_preprocessed %>% filter(substr(adiagnosekode, 1, 3) == "F99"))
 
-df_f99_visits <- df_outpatient_visits_preprocessed %>%
-  filter(substr(adiagnosekode, 1, 3) == "F99")
 
 df_f9_visits <- df_outpatient_visits_preprocessed %>%
   filter(substr(adiagnosekode, 1, 2) == "F9")
+```
+
+# Age at first visit
+```{r}
+df_demographics <- get_fct("FOR_kohorte_demografi_inkl_2021") %>% 
+  select(foedselsdato, dw_ek_borger, koennavn)
+
+df_age_at_first_p_visit <- df_demographics %>% 
+  right_join(df_outpatient_visits_preprocessed) %>% 
+  select(foedselsdato, datotid_start, dw_ek_borger) %>% 
+  group_by(dw_ek_borger) %>% 
+  filter(datotid_start == min(datotid_start), .by_group = TRUE) %>% 
+  mutate(age = as.Date(datotid_start) - as.Date(foedselsdato))
+```
+
+```{r}
+df_age_in_years <- df_age_at_first_p_visit %>% mutate(age_in_years = as.numeric(age/365.25))
+skim(df_age_in_years$age_in_years)
+median(df_age_in_years$age_in_years)
+```
+
+# Gender split
+```{r}
+df_demographics_gender <- df_demographics %>% 
+  mutate(woman = if_else(koennavn == "Kvinde", 1, 0)) %>% 
+  count(woman) %>% 
+  mutate(percent = n / sum(n) * 100)
 ```
 

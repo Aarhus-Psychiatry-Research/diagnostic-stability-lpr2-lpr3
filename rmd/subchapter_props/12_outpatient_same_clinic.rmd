@@ -13,21 +13,21 @@ source(here::here("src", "functions.r"))
 
 df_outpatient_visits_clinic_id <- df_outpatient_visits %>%
   keep_only_psych_visits() %>%
-  add_patient_and_clinic_uid(
+  add_patient_clinic_uid(
     clinic_id_col = clinic,
     patient_id_col = dw_ek_borger
   ) %>%
-  filter(ymd(end_date_str) > as.Date(datotid_start))
+  filter(ymd(start_date_str) < as.Date(datotid_start), ymd(end_date_str) > as.Date(datotid_start))
 ```
 
 #### Default 
 ```{r}
-df_n_with_diag_in_period <- df_outpatient_visits_clinic_id %>%
-  add_column_n_with_diagnosis_in_period()
+df_n_by_subcp_by_quarter <- df_outpatient_visits_clinic_id %>%
+  summarise_n_by_subcp_by_quarter()
 
-df_prop_of_patients_with_diag_from_subcp <- prop_of_patients_with_diagnosis_by_subcp(
-  df_n_outpatients_by_quarter,
-  df_n_with_diag_in_period
+df_prop_of_patients_with_diag_from_subcp <- prop_patients_with_diagnosis_by_subcp(
+  df_n_by_quarter,
+  df_n_by_subcp_by_quarter
 )
 ```
 
@@ -35,26 +35,26 @@ df_prop_of_patients_with_diag_from_subcp <- prop_of_patients_with_diagnosis_by_s
 #### Final visit
 ```{r}
 df_visits_relabel_final_diag <- df_outpatient_visits_clinic_id %>%
-  relabel_diag_with_last_in_sequence(patient_clinic_id)
+  relabel_diag_with_last_in_sequence(patient_clinic_uid)
 
 df_n_patients_by_subcp_by_quarter_relabel_final_diag <- df_visits_relabel_final_diag %>%
-  add_column_n_with_diagnosis_in_period()
+  summarise_n_by_subcp_by_quarter()
 
-df_prop_diag_constructed_sequence_final_visit_only <- prop_of_patients_with_diagnosis_by_subcp(
-  df_n_outpatients_by_quarter,
+df_prop_diag_constructed_sequence_final_visit_only <- prop_patients_with_diagnosis_by_subcp(
+  df_n_by_quarter,
   df_n_patients_by_subcp_by_quarter_relabel_final_diag
 )
 ```
 #### Most severe visit
 ```{r}
 df_visits_relabel_most_severe_diag <- df_outpatient_visits_clinic_id %>%
-  relabel_diag_most_severe(patient_clinic_id)
+  relabel_diag_most_severe(patient_clinic_uid)
 
 df_n_patients_by_subcp_by_quarter_relabel_most_severe <- df_visits_relabel_most_severe_diag %>%
-  add_column_n_with_diagnosis_in_period()
+  summarise_n_by_subcp_by_quarter()
 
-df_prop_diag_constructed_sequence_most_severe_diag <- prop_of_patients_with_diagnosis_by_subcp(
-  df_n_outpatients_by_quarter,
+df_prop_diag_constructed_sequence_most_severe_diag <- prop_patients_with_diagnosis_by_subcp(
+  df_n_by_quarter,
   df_n_patients_by_subcp_by_quarter_relabel_most_severe
 )
 ```
@@ -97,7 +97,7 @@ log_time()
 
 ### Plot with p-values
 ```{r}
-df_n_patients_by_subcp_by_quarter_combined_without_first_quarters <- df_n_patients_by_subcp_by_quarter_combined %>%
+df_n_patients_by_subcp_by_quarter_combined_2013_onward <- df_n_patients_by_subcp_by_quarter_combined %>%
   filter(ymd(start_date_str) < as.Date(datotid_start))
 ```
 
@@ -105,24 +105,24 @@ df_n_patients_by_subcp_by_quarter_combined_without_first_quarters <- df_n_patien
 pacman::p_load(fable, tsibble, feasts, urca)
 
 
-df_n_patients_by_subcp_by_quarter_combined_without_first_quarters_p_values <- df_n_patients_by_subcp_by_quarter_combined_without_first_quarters %>%
+df_n_patients_by_subcp_by_quarter_combined_2013_onward_p_values <- df_n_patients_by_subcp_by_quarter_combined_2013_onward %>%
   mutate(
-    lpr3 = if_else(period < "2019-02-03", 0, 1),
+    lpr3 = if_else(period < transition_date_str, 0, 1),
     period = yearquarter(period)
   ) %>%
   select(prop, adiagnosekode, period, origin, lpr3) %>%
   as_tsibble(key = c(origin, adiagnosekode), index = period) %>%
-  model(arima = ARIMA(prop ~ 1 + lpr3 + pdq(0, 0, 0) + PDQ(0, 0, 0))) %>%
+  model(tslm = TSLM(prop ~ 1 + lpr3)) %>%
   coef() %>%
   select(!.model) %>%
   filter(term == "lpr3")
 
 ## add the needed x (period) and y (prop) values for plotting
-df_n_patients_by_subcp_by_quarter_combined_without_first_quarters_p_values <- df_n_patients_by_subcp_by_quarter_combined_without_first_quarters %>%
+df_n_patients_by_subcp_by_quarter_combined_2013_onward_p_values <- df_n_patients_by_subcp_by_quarter_combined_2013_onward %>%
   filter(period == max(period)) %>%
   select(period, prop, origin, adiagnosekode) %>%
-  left_join(df_n_patients_by_subcp_by_quarter_combined_without_first_quarters_p_values, by = c("origin", "adiagnosekode")) %>%
-  mutate(corrected_p <- p.adjust(p.value, "fdr", n = 70), # 30 comparisons
+  left_join(df_n_patients_by_subcp_by_quarter_combined_2013_onward_p_values, by = c("origin", "adiagnosekode")) %>%
+  mutate(corrected_p <- p.adjust(p.value, "fdr", n = n_stat_tests), # 30 comparisons
     significant = if_else(corrected_p < 0.05, "*", "")
   ) %>%
   mutate(adiagnosekode = case_when(
@@ -145,20 +145,20 @@ df_n_patients_by_subcp_by_quarter_combined_without_first_quarters_p_values <- df
 source(here("src", "subchapter_props_functions.r"))
 
 
-graph_subchapter_props(df_n_patients_by_subcp_by_quarter_combined_without_first_quarters,
-  filename = "examine_mitigation_constructed_without_first_quarters_full_same_y_axes_with_p_values",
+graph_subchapter_props(df_n_patients_by_subcp_by_quarter_combined_2013_onward,
+  filename = "examine_mitigation_constructed_2013_onward_full_same_y_axes_with_p_values",
   date_range = c(ymd("2013-01-01"), ymd("2022-05-01")),
   ylabel = "Proportion of outpatients with within-quarter incident main diagnosis from chapter",
-  p_values = df_n_patients_by_subcp_by_quarter_combined_without_first_quarters_p_values,
+  p_values = df_n_patients_by_subcp_by_quarter_combined_2013_onward_p_values,
   nudge_constant = 0.02,
   tag = "A"
 )
 
-graph_subchapter_props(df_n_patients_by_subcp_by_quarter_combined_without_first_quarters,
-  filename = "examine_mitigation_constructed_without_first_quarters_full_free_y_axes_with_p_values",
+graph_subchapter_props(df_n_patients_by_subcp_by_quarter_combined_2013_onward,
+  filename = "examine_mitigation_constructed_2013_onward_full_free_y_axes_with_p_values",
   date_range = c(ymd("2013-01-01"), ymd("2022-10-01")),
   ylabel = "Proportion of outpatients with within-quarter incident main diagnosis from chapter",
-  p_values = df_n_patients_by_subcp_by_quarter_combined_without_first_quarters_p_values,
+  p_values = df_n_patients_by_subcp_by_quarter_combined_2013_onward_p_values,
   nudge_frac = 0.02,
   tag = "B"
 )

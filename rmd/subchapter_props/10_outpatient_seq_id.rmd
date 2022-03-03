@@ -7,14 +7,16 @@ editor_options:
 library("here")
 ```
 
-# Suchapter props, outpatient, naive useage of kontakt and forløbsansvar
+Count proportion of all visits in a quarter that has a main diagnosis from each subchapter.
 
-Reduce complexity
+# Suchapter props, outpatient, naive useage of kontakt and forløbsansvar
+Preprocess.
+
 ```{r}
 df_outpatient_visits <- df_raw_outpatient %>%
   filter(ambbesoeg == 1) %>%
-  add_LPR23_quarter_column() %>%
-  filter(ymd(end_date_str) > as.Date(datotid_start)) %>% 
+  add_quarter_column() %>%
+  filter(ymd(end_date_str) > as.Date(datotid_start)) %>%# Keep information prior to 2013 to visualise unexplained variability
   select(
     dw_ek_borger,
     datotid_start,
@@ -27,20 +29,20 @@ df_outpatient_visits <- df_raw_outpatient %>%
   ) %>%
   rename(clinic = shakafskode_besoeg) %>%
   keep_only_psych_visits() %>%
-  truncate_diagnosis_to_letter_and_digit()
+  mutate(adiagnosekode = substring(adiagnosekode, 1, 2))
 ```
 
-### Naive
+### Unchanged diagnoses
 ```{r}
-df_n_outpatients_by_quarter <- df_outpatient_visits %>%
-  add_column_unique_pt_in_period()
+df_n_by_quarter <- df_outpatient_visits %>%
+  summarise_n_pt_in_period()
 ```
 
 ```{r}
 df_n_patients_by_subcp_by_quarter <- df_outpatient_visits %>%
-  add_column_n_with_diagnosis_in_period()
+  summarise_n_by_subcp_by_quarter()
 
-df_prop_diag_outpatient <- prop_of_patients_with_diagnosis_by_subcp(df_n_outpatients_by_quarter, df_n_patients_by_subcp_by_quarter)
+df_prop_diag_outpatient <- prop_patients_with_diagnosis_by_subcp(df_n_by_quarter, df_n_patients_by_subcp_by_quarter)
 
 log_time()
 ```
@@ -49,13 +51,13 @@ log_time()
 Relabel with most severe from sequence
 ```{r}
 source(here("src", "functions.r"))
-df_df_n_patients_by_subcp_by_quarter_relabel_diag_as_most_severe <- df_outpatient_visits %>%
+df_n_patients_by_subcp_by_quarter_relabel_diag_as_most_severe <- df_outpatient_visits %>%
   relabel_diag_most_severe(dw_sk_lpr3forloebsansvar) %>%
-  add_column_n_with_diagnosis_in_period()
+  summarise_n_by_subcp_by_quarter()
 
-df_prop_diag_most_severe_outpatient <- prop_of_patients_with_diagnosis_by_subcp(
-  df_n_outpatients_by_quarter,
-  df_df_n_patients_by_subcp_by_quarter_relabel_diag_as_most_severe
+df_prop_diag_most_severe_outpatient <- prop_patients_with_diagnosis_by_subcp(
+  df_n_by_quarter,
+  df_n_patients_by_subcp_by_quarter_relabel_diag_as_most_severe
 )
 
 log_time()
@@ -66,11 +68,12 @@ log_time()
 ```{r}
 source(here("src", "functions.r"))
 
-df_n_patients_by_subcp_by_quarter_relabel_diag_as_final <- df_outpatient_visits %>%  relabel_diag_with_last_in_sequence(dw_sk_lpr3forloebsansvar) %>%
-  add_column_n_with_diagnosis_in_period()
+df_n_patients_by_subcp_by_quarter_relabel_diag_as_final <- df_outpatient_visits %>% 
+  relabel_diag_with_last_in_sequence(dw_sk_lpr3forloebsansvar) %>%
+  summarise_n_by_subcp_by_quarter()
 
-df_prop_diag_outpatient_final_visit_only <- prop_of_patients_with_diagnosis_by_subcp(
-  df_n_outpatients_by_quarter,
+df_prop_diag_outpatient_final_visit_only <- prop_patients_with_diagnosis_by_subcp(
+  df_n_by_quarter,
   df_n_patients_by_subcp_by_quarter_relabel_diag_as_final
 )
 
@@ -85,14 +88,16 @@ log_time()
 df_n_patients_by_subchapters_combined <- mutate(df_prop_diag_outpatient, origin = "Unchanged") %>%
   bind_rows(mutate(df_prop_diag_most_severe_outpatient, origin = "Most severe")) %>%
   bind_rows(mutate(df_prop_diag_outpatient_final_visit_only, origin = "Final visit"))
+
 write_csv(df_n_patients_by_subchapters_combined, here("csv", "df_n_patients_by_subchapters_combined.csv"))
 ```
 
 ```{r}
-df_n_patients_by_subchapters_combined_without_first_quarters <- df_n_patients_by_subchapters_combined %>%
-  filter(ymd(start_date_str) < as.Date(datotid_start), 
-         ymd(end_date_str) > as.Date(datotid_start)) %>% 
-write_csv(df_n_patients_by_subchapters_combined_without_first_quarters, here("csv", "df_n_patients_by_subchapters_combined_without_first_quarters.csv"))
+df_n_patients_by_subchapters_combined_2013_onward <- df_n_patients_by_subchapters_combined %>%
+  filter(ymd(start_date_str) < as.Date(period), 
+         ymd(end_date_str) > as.Date(period))
+
+write_csv(df_n_patients_by_subchapters_combined_2013_onward, here("csv", "df_n_patients_by_subchapters_combined_2013_onward.csv"))
 
 log_time()
 ```
@@ -100,7 +105,7 @@ log_time()
 ### Plot
 ```{r}
 df_n_patients_by_subchapters_combined <- read_csv(here("csv", "df_n_patients_by_subchapters_combined.csv"))
-df_n_patients_by_subchapters_combined_without_first_quarters <- read_csv(here("csv", "df_n_patients_by_subchapters_combined_without_first_quarters.csv"))
+df_n_patients_by_subchapters_combined_2013_onward <- read_csv(here("csv", "df_n_patients_by_subchapters_combined_2013_onward.csv"))
 ```
 
 ```{r}
@@ -113,14 +118,16 @@ graph_subchapter_props(df_n_patients_by_subchapters_combined,
   filename = "examine_mitigation_full_same_y_axes",
   date_range = c(ymd("2011-06-01"), ymd("2022-05-01")),
   ylabel = "Proportion of outpatients with within-quarter incident main diagnosis from chapter",
-  tag = "A"
+  tag = "A",
+  with_mitigation = FALSE
 )
 
 graph_subchapter_props(df_n_patients_by_subchapters_combined,
   filename = "examine_mitigation_full_free_y_axes",
   date_range = c(ymd("2011-06-01"), ymd("2022-05-01")),
   ylabel = "Proportion of outpatients with within-quarter incident main diagnosis from chapter",
-  tag = "B"
+  tag = "B",
+  with_mitigation = FALSE
 )
 
 log_time()
@@ -130,15 +137,15 @@ log_time()
 ### Plot
 source(here("src", "subchapter_props_functions.r"))
 
-graph_subchapter_props(df_n_patients_by_subchapters_combined_without_first_quarters,
-  filename = "examine_mitigation_without_first_quarters_same_y_axes",
+graph_subchapter_props(df_n_patients_by_subchapters_combined_2013_onward,
+  filename = "examine_mitigation_2013_onward_same_y_axes",
   date_range = c(ymd("2013-01-01"), ymd("2021-04-01")),
   ylabel = "Proportion of outpatients with within-quarter incident main diagnosis from chapter",
   tag = "A"
 )
 
-graph_subchapter_props(df_n_patients_by_subchapters_combined_without_first_quarters,
-  filename = "examine_mitigation_without_first_quarters_free_y_axes",
+graph_subchapter_props(df_n_patients_by_subchapters_combined_2013_onward,
+  filename = "examine_mitigation_2013_onward_free_y_axes",
   date_range = c(ymd("2013-01-01"), ymd("2021-04-01")),
   ylabel = "Proportion of outpatients with within-quarter incident main diagnosis from chapter",
   tag = "B"
@@ -152,10 +159,10 @@ log_time()
 pacman::p_load(fable, tsibble, feasts, urca)
 
 
-df_n_patients_by_subchapters_combined_without_first_quarters_model_params <- df_n_patients_by_subchapters_combined_without_first_quarters %>%
+df_n_patients_by_subchapters_combined_2013_onward_model_params <- df_n_patients_by_subchapters_combined_2013_onward %>%
   filter(substr(adiagnosekode, 1, 1) == "F") %>%
   mutate(
-    lpr3 = if_else(period < "2019-02-03", 0, 1),
+    lpr3 = if_else(period < transition_date_str, 0, 1),
     period = yearquarter(period)
   ) %>%
   select(prop, adiagnosekode, period, origin, lpr3) %>%
@@ -166,10 +173,10 @@ df_n_patients_by_subchapters_combined_without_first_quarters_model_params <- df_
   pivot_wider(id_cols = c("origin", "adiagnosekode"), names_from = "term", values_from = "estimate") %>%
   rename(intercept = "(Intercept)")
 
-df_n_patients_by_subchapters_combined_without_first_quarters_p_values <- df_n_patients_by_subchapters_combined_without_first_quarters %>%
+df_n_patients_by_subchapters_combined_2013_onward_p_values <- df_n_patients_by_subchapters_combined_2013_onward %>%
   filter(substr(adiagnosekode, 1, 1) == "F") %>%
   mutate(
-    lpr3 = if_else(period < "2019-02-03", 0, 1),
+    lpr3 = if_else(period < transition_date_str, 0, 1),
     period = yearquarter(period)
   ) %>%
   select(prop, adiagnosekode, period, origin, lpr3) %>%
@@ -181,7 +188,7 @@ df_n_patients_by_subchapters_combined_without_first_quarters_p_values <- df_n_pa
 ```
 
 ```{r}
-df_n_patients_by_subchapters_combined_without_first_quarters_changes <- df_n_patients_by_subchapters_combined_without_first_quarters_model_params %>%
+df_n_patients_by_subchapters_combined_2013_onward_changes <- df_n_patients_by_subchapters_combined_2013_onward_model_params %>%
   mutate(
     before = percent(intercept, accuracy = .1),
     after = percent(intercept + lpr3, accuracy = .1),
@@ -192,17 +199,17 @@ df_n_patients_by_subchapters_combined_without_first_quarters_changes <- df_n_pat
 ```
 
 ```{r}
-write.csv(df_n_patients_by_subchapters_combined_without_first_quarters_changes, here("tables", "subchapter_prop_changes.csv"))
+write.csv(df_n_patients_by_subchapters_combined_2013_onward_changes, here("tables", "subchapter_prop_changes.csv"))
 ```
 
 ```{r}
 
 ## add the needed x (period) and y (prop) values for plotting
-df_n_patients_by_subchapters_combined_without_first_quarters_p_values_for_plot <- df_n_patients_by_subchapters_combined_without_first_quarters %>%
+df_n_patients_by_subchapters_combined_2013_onward_p_values_for_plot <- df_n_patients_by_subchapters_combined_2013_onward %>%
   filter(period == max(period)) %>%
   select(period, prop, origin, adiagnosekode) %>%
-  left_join(df_n_patients_by_subchapters_combined_without_first_quarters_p_values, by = c("origin", "adiagnosekode")) %>%
-  mutate(corrected_p <- p.adjust(p.value, "fdr", n = 70), # 30 comparisons
+  left_join(df_n_patients_by_subchapters_combined_2013_onward_p_values, by = c("origin", "adiagnosekode")) %>%
+  mutate(corrected_p <- p.adjust(p.value, "fdr", n = n_stat_tests), # 30 comparisons
     significant = if_else(corrected_p < 0.05, "*", "")
   ) %>%
   mutate(adiagnosekode = case_when(
@@ -225,21 +232,21 @@ df_n_patients_by_subchapters_combined_without_first_quarters_p_values_for_plot <
 source(here("src", "subchapter_props_functions.r"))
 
 
-graph_subchapter_props(df_n_patients_by_subchapters_combined_without_first_quarters,
-  filename = "examine_mitigation_without_first_quarters_same_y_axes_with_p_values",
+graph_subchapter_props(df_n_patients_by_subchapters_combined_2013_onward,
+  filename = "examine_mitigation_2013_onward_same_y_axes_with_p_values",
   date_range = c(ymd("2013-01-01"), ymd("2021-04-01")),
   ylabel = "Proportion of outpatients with within-quarter incident main diagnosis from chapter",
-  p_values = df_n_patients_by_subchapters_combined_without_first_quarters_p_values_for_plot,
+  p_values = df_n_patients_by_subchapters_combined_2013_onward_p_values_for_plot,
   nudge_constant = 0.02,
   tag = "A"
 )
 
 
-graph_subchapter_props(df_n_patients_by_subchapters_combined_without_first_quarters,
-  filename = "examine_mitigation_without_first_quarters_free_y_axes_with_p_values",
+graph_subchapter_props(df_n_patients_by_subchapters_combined_2013_onward,
+  filename = "examine_mitigation_2013_onward_free_y_axes_with_p_values",
   date_range = c(ymd("2013-01-01"), ymd("2021-04-01")),
   ylabel = "Proportion of outpatients with within-quarter incident main diagnosis from chapter",
-  p_values = df_n_patients_by_subchapters_combined_without_first_quarters_p_values_for_plot,
+  p_values = df_n_patients_by_subchapters_combined_2013_onward_p_values_for_plot,
   nudge_frac = 0.02,
   tag = "B"
 )

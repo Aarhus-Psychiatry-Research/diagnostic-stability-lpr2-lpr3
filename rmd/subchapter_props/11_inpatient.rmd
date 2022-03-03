@@ -30,23 +30,18 @@ log_time()
 ```{r}
 df_inpatient_by_subcp <- df_all_inpatient_visits %>%
   keep_only_psych_visits() %>%
-  truncate_diagnosis_to_letter_and_digit() %>%
-  add_LPR23_quarter_column()
-
-## Examine date parsing
-## df_examine <- df_inpatient_by_subcp %>%
-##   filter(datotid_start > ymd("2018-09-01")) %>%
-##   filter(datotid_start < ymd("2019-04-01"))
+  mutate(adiagnosekode = substring(adiagnosekode, 1, 2) %>%
+  add_quarter_column()
 
 df_n_patients_by_quarter <- df_inpatient_by_subcp %>%
-  add_column_unique_pt_in_period()
+  summarise_n_pt_in_period()
 
-df_n_patients_by_diag_by_quarter <- df_inpatient_by_subcp %>%
-  add_column_n_with_diagnosis_in_period()
+df_n_patients_by_subcp_by_quarter <- df_inpatient_by_subcp %>%
+  summarise_n_by_subcp_by_quarter()
 
-df_prop_of_patients_with_diag <- prop_of_patients_with_diagnosis_by_subcp(
+df_prop_of_patients_with_diag <- prop_patients_with_diagnosis_by_subcp(
   df_n_patients_by_quarter,
-  df_n_patients_by_diag_by_quarter
+  df_n_patients_by_subcp_by_quarter
 )
 
 write_csv(df_prop_of_patients_with_diag, here("csv", "df_prop_of_patients_with_diag"))
@@ -76,17 +71,4 @@ graph_subchapter_props(df_prop_of_patients_with_diag,
 )
 
 log_time()
-```
-
-```{r}
-df_prop_of_patients_with_diag %>%
-  mutate(
-    lpr3 = if_else(period < "2019-02-03", 0, 1),
-    period = yearquarter(period)
-  ) %>%
-  select(prop, adiagnosekode, period, lpr3) %>%
-  as_tsibble(key = adiagnosekode, index = period) %>%
-  model(arima = ARIMA(prop ~ 1 + lpr3 + pdq(0, 0, 0) + PDQ(0, 0, 0))) %>%
-  coef() %>%
-  select(!.model)
 ```
