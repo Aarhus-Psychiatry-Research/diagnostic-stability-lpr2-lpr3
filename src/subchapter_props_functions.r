@@ -54,13 +54,30 @@ graph_subchapter_props <- function(df,
             shape = origin,
             ymin = prop_lcl,
             ymax = prop_ucl
-        ))
+        )) + 
+        default_colour_scale +
+        default_theme +
+        theme(
+            legend.key.size = unit(0.8, "cm"),
+            legend.text = element_text(size = 10),
+            legend.background = element_rect(fill = "gray97", size = 3),
+            legend.position = "bottom"
+        )
     } else {
+        df <- df %>%
+            filter(origin == "Unchanged")
+
         aesthetics <- ggplot(df, aes(
             x = as.Date(period), y = prop,
+            color = origin,
+            shape = origin,
             ymin = prop_lcl,
             ymax = prop_ucl
-        ))
+        )) + 
+        scale_colour_manual(values = rgb(75 / 255, 167 / 255, 104 / 255)) +
+        default_theme +
+        theme(legend.position = "none") +
+        scale_shape_manual(values = c(15))
     }
 
     base_plot <- aesthetics +
@@ -68,19 +85,13 @@ graph_subchapter_props <- function(df,
             position = position_dodge(width = 60),
             size = 1
         ) +
-        default_theme +
-        default_colour_scale +
         theme(
             axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
             panel.background = element_rect(
                 fill = "gray97",
                 colour = "gray97",
                 size = 0.5
-            ),
-            legend.key.size = unit(0.8, "cm"),
-            legend.text = element_text(size = 10),
-            legend.background = element_rect(fill = "gray97", size = 3),
-            legend.position = "bottom"
+            )
         ) +
         geom_vline(aes(xintercept = ymd("2019-02-15")), size = 0.5, alpha = 0.7, colour = "grey") +
         geom_linerange(alpha = 0.2, size = 0.2, position = position_dodge(width = 60)) +

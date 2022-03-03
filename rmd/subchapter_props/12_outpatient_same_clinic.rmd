@@ -75,7 +75,9 @@ log_time()
 ```{r}
 ### Plot
 df_n_patients_by_subcp_by_quarter_combined <- read_csv(here("csv", "df_n_patients_by_subcp_by_quarter_combined.csv"))
+```
 
+```{r}
 source(here::here("src", "subchapter_props_functions.r"))
 
 graph_subchapter_props(df_n_patients_by_subcp_by_quarter_combined,
