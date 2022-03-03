@@ -29,7 +29,7 @@ df_outpatient_visits <- df_raw_outpatient %>%
   ) %>%
   rename(clinic = shakafskode_besoeg) %>%
   keep_only_psych_visits() %>%
-  mutate(adiagnosekode = substring(adiagnosekode, 1, 2)
+  mutate(adiagnosekode = substring(adiagnosekode, 1, 2))
 ```
 
 ### Unchanged diagnoses
@@ -94,8 +94,9 @@ write_csv(df_n_patients_by_subchapters_combined, here("csv", "df_n_patients_by_s
 
 ```{r}
 df_n_patients_by_subchapters_combined_2013_onward <- df_n_patients_by_subchapters_combined %>%
-  filter(ymd(start_date_str) < as.Date(datotid_start), 
-         ymd(end_date_str) > as.Date(datotid_start)) %>% 
+  filter(ymd(start_date_str) < as.Date(period), 
+         ymd(end_date_str) > as.Date(period))
+
 write_csv(df_n_patients_by_subchapters_combined_2013_onward, here("csv", "df_n_patients_by_subchapters_combined_2013_onward.csv"))
 
 log_time()
@@ -117,14 +118,16 @@ graph_subchapter_props(df_n_patients_by_subchapters_combined,
   filename = "examine_mitigation_full_same_y_axes",
   date_range = c(ymd("2011-06-01"), ymd("2022-05-01")),
   ylabel = "Proportion of outpatients with within-quarter incident main diagnosis from chapter",
-  tag = "A"
+  tag = "A",
+  with_mitigation = FALSE
 )
 
 graph_subchapter_props(df_n_patients_by_subchapters_combined,
   filename = "examine_mitigation_full_free_y_axes",
   date_range = c(ymd("2011-06-01"), ymd("2022-05-01")),
   ylabel = "Proportion of outpatients with within-quarter incident main diagnosis from chapter",
-  tag = "B"
+  tag = "B",
+  with_mitigation = FALSE
 )
 
 log_time()
