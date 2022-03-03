@@ -5,15 +5,21 @@ editor_options:
   chunk_output_type: inline
 ---
 
-Are dw_sk_kontakt and dw_lpr3_forloebsansvar unique?
+Are there overlaps between dw_sk_kontakt and dw_lpr3_forloebsansvar?
 
 ```{r}
+p_load(skimr)
+
+df_raw_outpatient <- get_fct("FOR_besoeg_fysiske_fremmoeder_inkl_2021") %>%
+  clean_sql_import()
+
 df_uncombined <- df_raw_outpatient %>% 
   select(dw_sk_lpr3forloebsansvar, dw_sk_kontakt)
 
 n_unique(df_uncombined)
 ```
 
+dw_sk_lpr3forloebsansvar == -1 if an lpr2 contct and vice versa.
 ```{r}
 df_combined <- df_uncombined %>% 
   mutate(identifier = pmax(dw_sk_lpr3forloebsansvar, dw_sk_kontakt)) %>% 
@@ -22,4 +28,4 @@ df_combined <- df_uncombined %>%
 n_unique(df_combined)
 ```
 
-Luckily, they're unique across. 
+Luckily, no overlaps.

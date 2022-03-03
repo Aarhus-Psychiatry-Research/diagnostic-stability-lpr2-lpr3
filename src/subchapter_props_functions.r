@@ -24,7 +24,8 @@ graph_subchapter_props <- function(df,
                                    p_values = NULL,
                                    nudge_frac = 0.02,
                                    nudge_constant = 0.02,
-                                   tag = "NA") {
+                                   tag = "NA",
+                                   unchanged_only = FALSE) {
     library("patchwork")
     library("gridExtra")
     library("here")

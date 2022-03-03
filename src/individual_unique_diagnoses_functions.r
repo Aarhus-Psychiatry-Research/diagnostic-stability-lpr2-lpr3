@@ -252,14 +252,12 @@ save_incident_per_active_plot <- function(df, filename, p_values = NULL, nudge_c
         df <- df %>% filter(period > ymd("2019-01-01") | origin == exclusive_column_for_lpr2)
     }
 
-    gg <- ggplot(
-        df,
-        aes(
-            x = as.Date(period),
-            y = diag_per_active,
-            color = origin
-        )
-    ) +
+    gg <- ggplot(df, aes(
+                        x = as.Date(period),
+                        y = estimate,
+                        color = origin
+                        )
+        ) +
         geom_linerange(
             aes(
                 ymin = lcl,
