@@ -1,5 +1,5 @@
 # Examining the stability of diagnostic coding across the transition from the DNPR2 to the DNPR3 for a publication
-Preprint: [INSERT LINK HERE]
+Preprint [here](https://www.medrxiv.org/content/10.1101/2022.03.03.22271695v1)
 
 The repo is split into multiple directories:
 1. doc/validation – where we check assumptions about the data which have been questioned during our analyses
